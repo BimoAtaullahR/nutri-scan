@@ -1,0 +1,100 @@
+openapi: 3.1.0
+info:
+  title: NutriScan Backend API
+  version: 0.1.0
+  description: Contract for the Mobile App to Backend API boundary.
+paths:
+  /anonymous-users:
+    post:
+      summary: Create an anonymous user identity.
+      responses:
+        "501":
+          description: Contract placeholder. Endpoint shape is not finalized yet.
+  /me/profile:
+    get:
+      summary: Get the current anonymous user's profile.
+      responses:
+        "501":
+          description: Contract placeholder. Endpoint shape is not finalized yet.
+    put:
+      summary: Create or update the current anonymous user's profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserProfileRequest"
+      responses:
+        "501":
+          description: Contract placeholder. Endpoint shape is not finalized yet.
+  /scans:
+    post:
+      summary: Create a scan from a food image.
+      description: Accepts a mobile multipart image upload and returns scan feedback when processing completes within the request window.
+      responses:
+        "501":
+          description: Contract placeholder. Endpoint shape is not finalized yet.
+  /scans/{scanId}:
+    get:
+      summary: Get a scan by ID.
+      responses:
+        "501":
+          description: Contract placeholder. Endpoint shape is not finalized yet.
+  /trends/weekly:
+    get:
+      summary: Get weekly energy trend data.
+      responses:
+        "501":
+          description: Contract placeholder. Endpoint shape is not finalized yet.
+  /nudges/{nudgeId}/responses:
+    post:
+      summary: Record a user response to a preventive nudge.
+      responses:
+        "501":
+          description: Contract placeholder. Endpoint shape is not finalized yet.
+components:
+  schemas:
+    UpdateUserProfileRequest:
+      type: object
+      properties:
+        heightCm:
+          type: number
+          minimum: 1
+        weightKg:
+          type: number
+          minimum: 1
+        ageRange:
+          type: string
+          enum:
+            - under_18
+            - 18_24
+            - 25_34
+            - 35_44
+            - 45_54
+            - 55_plus
+      required:
+        - heightCm
+        - weightKg
+    UserProfile:
+      type: object
+      properties:
+        heightCm:
+          type: number
+        weightKg:
+          type: number
+        ageRange:
+          type: string
+        bmi:
+          type: number
+        bmiCategory:
+          type: string
+          enum:
+            - underweight
+            - normal
+            - overweight
+            - obese
+      required:
+        - heightCm
+        - weightKg
+        - bmi
+        - bmiCategory

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nutriscan.local/contracts/ai-inference/scan-inference.schema.json",
+  "title": "ScanInferencePayload",
+  "description": "Placeholder contract for the Backend API to AI/ML Inference boundary.",
+  "type": "object",
+  "required": ["modelVersion", "foodCategories"],
+  "properties": {
+    "modelVersion": {
+      "type": "string"
+    },
+    "foodCategories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "confidenceScore"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "confidenceScore": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "visualDominance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "estimatedEnergyKcal": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

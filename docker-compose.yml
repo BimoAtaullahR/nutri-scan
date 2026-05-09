@@ -1,0 +1,38 @@
+name: nutriscan
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nutriscan
+      POSTGRES_USER: nutriscan
+      POSTGRES_PASSWORD: nutriscan
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./services/backend
+    environment:
+      DATABASE_URL: postgres://nutriscan:nutriscan@postgres:5432/nutriscan?sslmode=disable
+      AI_INFERENCE_URL: http://ai-inference:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - ai-inference
+    profiles:
+      - services
+
+  ai-inference:
+    build:
+      context: ./services/ai-inference
+    ports:
+      - "8000:8000"
+    profiles:
+      - services
+
+volumes:
+  postgres_data:
