@@ -4,12 +4,26 @@ info:
   version: 0.1.0
   description: Contract for the Mobile App to Backend API boundary.
 paths:
+  /healthz:
+    get:
+      summary: Check Backend API health.
+      responses:
+        "200":
+          description: Backend API is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
   /anonymous-users:
     post:
       summary: Create an anonymous user identity.
       responses:
-        "501":
-          description: Contract placeholder. Endpoint shape is not finalized yet.
+        "201":
+          description: Anonymous user identity created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnonymousUserToken"
   /me/profile:
     get:
       summary: Get the current anonymous user's profile.
@@ -54,6 +68,28 @@ paths:
           description: Contract placeholder. Endpoint shape is not finalized yet.
 components:
   schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    AnonymousUserToken:
+      type: object
+      properties:
+        anonymousUserId:
+          type: string
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+      required:
+        - anonymousUserId
+        - accessToken
+        - tokenType
     UpdateUserProfileRequest:
       type: object
       properties:

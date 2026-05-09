@@ -1,1 +1,5 @@
 PRD NutriScan.pdf
+
+# Local Go caches used by Codex/test runs inside the workspace sandbox.
+services/backend/.gocache/
+services/backend/.gomodcache/
