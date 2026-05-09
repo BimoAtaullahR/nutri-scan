@@ -35,3 +35,9 @@ model-artifacts/      # local placeholder; large models should not be committed
 ```
 
 Keep experiments in `notebooks/` separate from runtime inference code.
+
+## Model and Dataset Artifacts
+
+Commit code, manifests, and lightweight config only. Do not commit datasets, trained model weights, or generated experiment outputs.
+
+Use `model-artifacts/` only as a local placeholder for runtime files downloaded from an external artifact store.
