@@ -2,38 +2,76 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://nutriscan.local/contracts/ai-inference/scan-inference.schema.json",
   "title": "ScanInferencePayload",
-  "description": "Placeholder contract for the Backend API to AI/ML Inference boundary.",
+  "description": "Contract for the Backend API to AI/ML Inference boundary.",
   "type": "object",
-  "required": ["modelVersion", "foodCategories"],
+  "required": [
+    "modelVersion",
+    "foodCategory",
+    "alternatives",
+    "coarsePortion",
+    "estimatedEnergyRange",
+    "isLowConfidence",
+    "confidenceThreshold"
+  ],
   "properties": {
     "modelVersion": {
       "type": "string"
     },
-    "foodCategories": {
+    "foodCategory": {
+      "type": "object",
+      "required": ["slug", "confidenceScore"],
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "confidenceScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "alternatives": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "confidenceScore"],
+        "required": ["slug", "confidenceScore"],
         "properties": {
-          "name": {
+          "slug": {
             "type": "string"
           },
           "confidenceScore": {
             "type": "number",
             "minimum": 0,
             "maximum": 1
-          },
-          "visualDominance": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "estimatedEnergyKcal": {
-            "type": "number",
-            "minimum": 0
           }
         }
       }
+    },
+    "coarsePortion": {
+      "type": "string",
+      "enum": ["small", "medium", "large"]
+    },
+    "estimatedEnergyRange": {
+      "type": ["object", "null"],
+      "properties": {
+        "minKcal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxKcal": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "isLowConfidence": {
+      "type": "boolean"
+    },
+    "confidenceThreshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
     }
   }
 }
