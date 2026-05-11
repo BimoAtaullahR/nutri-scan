@@ -90,5 +90,10 @@ _Avoid_: AI recommendation, nudge
 
 - Fine-tune a pretrained image classifier for the MVP food categories.
 - Do not train a model from scratch for the MVP.
+- Use FastAPI for the inference HTTP service.
+- Use PyTorch and timm for classifier training and inference.
+- Prefer lightweight pretrained baselines such as EfficientNet-B0 or MobileNetV3.
 - Evaluate with top-1 accuracy, top-3 accuracy, and a confusion matrix on a held-out test set.
+- Store MVP evaluation outputs as local metrics files, not in an experiment tracking service.
 - Maintain a **Dataset Manifest** for source, license, class coverage, and split counts.
+- Deliver an end-to-end inference slice: dataset preparation, baseline training, evaluation, exported model artifact, and an inference API usable by the Backend API.

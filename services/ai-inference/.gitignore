@@ -1,0 +1,12 @@
+data/raw/
+data/processed/
+model-artifacts/*
+!model-artifacts/.gitkeep
+notebooks/.ipynb_checkpoints/
+reports/*.json
+reports/*.csv
+reports/*.png
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.venv/

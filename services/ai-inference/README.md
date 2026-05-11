@@ -41,3 +41,30 @@ Keep experiments in `notebooks/` separate from runtime inference code.
 Commit code, manifests, and lightweight config only. Do not commit datasets, trained model weights, or generated experiment outputs.
 
 Use `model-artifacts/` only as a local placeholder for runtime files downloaded from an external artifact store.
+
+Keep raw and processed datasets local under `data/raw/` and `data/processed/`. Commit only manifests, scripts, and lightweight config.
+
+## Local Setup
+
+Use Python 3.12 or newer.
+
+```bash
+cd services/ai-inference
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+```
+
+## Local Commands
+
+```bash
+python -m pytest
+python -m ruff check .
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Health check:
+
+```bash
+curl http://localhost:8000/healthz
+```
