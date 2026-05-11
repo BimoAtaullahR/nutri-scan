@@ -162,3 +162,23 @@ top-3 accuracy at least 90%.
 `small`, `medium`, and `large` kcal ranges. These values are lookup estimates for
 MVP feedback, not exact calorie detection. They must be reviewed against trusted
 nutrition references before production use.
+
+## Inference API
+
+Start the service:
+
+```bash
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Smoke-test `/infer`:
+
+```bash
+curl -X POST http://localhost:8000/infer \
+  -F "image=@/path/to/food.jpg" \
+  -F "portion=medium"
+```
+
+The endpoint looks for local artifacts in `model-artifacts/baseline-food-classifier/`.
+If artifacts are missing, it returns a deterministic stub prediction so Backend API
+integration can continue before the trained model is available.
