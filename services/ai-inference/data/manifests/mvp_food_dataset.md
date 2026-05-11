@@ -215,6 +215,36 @@ Deferred categories:
    - confusion matrix
    - per-class precision/recall
 
+## Curation Audit Workflow
+
+After `data/processed` exists and bad examples have been removed manually, run:
+
+```bash
+python scripts/curate_dataset.py \
+  --processed-dir data/processed \
+  --class-map configs/mvp_food_categories.json \
+  --report-path reports/dataset-curation/curation_report.json
+```
+
+The generated report records train/validation/test counts, total images per class,
+minimum-review status, and weak-class risks. Do not commit the generated report;
+copy final reviewed counts into the table below.
+
+## Final Reviewed Counts
+
+Status: pending real local dataset curation.
+
+| Class | Train | Validation | Test | Total | Reviewed >= 100 | Risks |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| `nasi_goreng` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `sate` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `rendang` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `bakso` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `gado_gado` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `soto` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `pempek` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `gudeg` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+
 ## MVP Acceptance Targets
 
 - 8-class closed-set classification

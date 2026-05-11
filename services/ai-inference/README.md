@@ -116,6 +116,21 @@ data/processed/
   test/<food_category>/
 ```
 
+## Dataset Curation Audit
+
+After manually removing bad images from `data/processed`, generate a local curation report:
+
+```bash
+python scripts/curate_dataset.py \
+  --processed-dir data/processed \
+  --class-map configs/mvp_food_categories.json \
+  --report-path reports/dataset-curation/curation_report.json
+```
+
+Use the report to update `data/manifests/mvp_food_dataset.md` with final
+train/validation/test counts and weak-class risks. The report is ignored by git;
+only reviewed counts and notes should be committed.
+
 ## Baseline Training
 
 The MVP baseline uses a lightweight pretrained image classifier and writes local artifacts to
