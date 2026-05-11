@@ -1,0 +1,46 @@
+{
+  "version": "0.1.0",
+  "categories": [
+    {
+      "slug": "nasi_goreng",
+      "displayName": "Nasi Goreng",
+      "sourceLabels": ["nasi_goreng"]
+    },
+    {
+      "slug": "sate",
+      "displayName": "Sate",
+      "sourceLabels": ["sate"]
+    },
+    {
+      "slug": "rendang",
+      "displayName": "Rendang",
+      "sourceLabels": ["rendang"]
+    },
+    {
+      "slug": "bakso",
+      "displayName": "Bakso",
+      "sourceLabels": ["bakso"]
+    },
+    {
+      "slug": "gado_gado",
+      "displayName": "Gado-gado",
+      "sourceLabels": ["gado_gado", "gado-gado"]
+    },
+    {
+      "slug": "soto",
+      "displayName": "Soto",
+      "sourceLabels": ["soto", "soto_ayam"]
+    },
+    {
+      "slug": "pempek",
+      "displayName": "Pempek",
+      "sourceLabels": ["pempek"]
+    },
+    {
+      "slug": "gudeg",
+      "displayName": "Gudeg",
+      "sourceLabels": ["gudeg"]
+    }
+  ],
+  "deferredCategories": ["nasi_padang"]
+}

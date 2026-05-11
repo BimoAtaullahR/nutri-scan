@@ -13,6 +13,10 @@ Target task:
 - Estimated Energy Range from lookup table, not calorie regression
 - Coarse Portion Estimate with user correction
 
+Machine-readable class mapping:
+
+- `configs/mvp_food_categories.json`
+
 MVP food categories:
 
 - `nasi_goreng`
