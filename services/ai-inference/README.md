@@ -155,3 +155,10 @@ python scripts/evaluate_model.py \
 
 The output states whether the MVP targets are met: top-1 accuracy at least 80% and
 top-3 accuracy at least 90%.
+
+## Estimated Energy Ranges
+
+`configs/estimated_energy_ranges.json` maps every MVP food category to approximate
+`small`, `medium`, and `large` kcal ranges. These values are lookup estimates for
+MVP feedback, not exact calorie detection. They must be reviewed against trusted
+nutrition references before production use.

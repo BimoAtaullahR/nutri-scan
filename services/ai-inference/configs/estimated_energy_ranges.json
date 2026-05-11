@@ -1,0 +1,51 @@
+{
+  "version": "0.1.0",
+  "description": "Approximate estimated energy ranges for NutriScan MVP demos. These are lookup estimates, not exact calorie detection.",
+  "sourceNotes": [
+    "Initial MVP ranges are conservative approximations for common Indonesian serving sizes.",
+    "Values must be reviewed against trusted nutrition references before production use.",
+    "Use user-correctable coarse portions instead of claiming gram-level portion estimation."
+  ],
+  "ranges": {
+    "nasi_goreng": {
+      "small": {"minKcal": 300, "maxKcal": 450},
+      "medium": {"minKcal": 450, "maxKcal": 650},
+      "large": {"minKcal": 650, "maxKcal": 850}
+    },
+    "sate": {
+      "small": {"minKcal": 250, "maxKcal": 400},
+      "medium": {"minKcal": 400, "maxKcal": 600},
+      "large": {"minKcal": 600, "maxKcal": 800}
+    },
+    "rendang": {
+      "small": {"minKcal": 250, "maxKcal": 400},
+      "medium": {"minKcal": 400, "maxKcal": 600},
+      "large": {"minKcal": 600, "maxKcal": 850}
+    },
+    "bakso": {
+      "small": {"minKcal": 220, "maxKcal": 350},
+      "medium": {"minKcal": 350, "maxKcal": 520},
+      "large": {"minKcal": 520, "maxKcal": 700}
+    },
+    "gado_gado": {
+      "small": {"minKcal": 250, "maxKcal": 400},
+      "medium": {"minKcal": 400, "maxKcal": 600},
+      "large": {"minKcal": 600, "maxKcal": 800}
+    },
+    "soto": {
+      "small": {"minKcal": 180, "maxKcal": 300},
+      "medium": {"minKcal": 300, "maxKcal": 480},
+      "large": {"minKcal": 480, "maxKcal": 650}
+    },
+    "pempek": {
+      "small": {"minKcal": 220, "maxKcal": 350},
+      "medium": {"minKcal": 350, "maxKcal": 550},
+      "large": {"minKcal": 550, "maxKcal": 750}
+    },
+    "gudeg": {
+      "small": {"minKcal": 300, "maxKcal": 450},
+      "medium": {"minKcal": 450, "maxKcal": 650},
+      "large": {"minKcal": 650, "maxKcal": 850}
+    }
+  }
+}
