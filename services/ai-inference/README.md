@@ -115,3 +115,25 @@ data/processed/
   validation/<food_category>/
   test/<food_category>/
 ```
+
+## Baseline Training
+
+The MVP baseline uses a lightweight pretrained image classifier and writes local artifacts to
+`model-artifacts/baseline-food-classifier/`. These artifacts are ignored by git.
+
+Validate training config without a dataset:
+
+```bash
+python scripts/train_classifier.py \
+  --config configs/baseline_training.json \
+  --processed-dir data/processed \
+  --dry-run
+```
+
+Train once `data/processed` exists:
+
+```bash
+python scripts/train_classifier.py \
+  --config configs/baseline_training.json \
+  --processed-dir data/processed
+```

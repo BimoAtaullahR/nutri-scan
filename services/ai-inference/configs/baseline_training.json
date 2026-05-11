@@ -1,0 +1,18 @@
+{
+  "modelName": "efficientnet_b0",
+  "imageSize": 224,
+  "batchSize": 16,
+  "epochs": 5,
+  "learningRate": 0.0003,
+  "labels": [
+    "nasi_goreng",
+    "sate",
+    "rendang",
+    "bakso",
+    "gado_gado",
+    "soto",
+    "pempek",
+    "gudeg"
+  ],
+  "artifactDir": "model-artifacts/baseline-food-classifier"
+}
