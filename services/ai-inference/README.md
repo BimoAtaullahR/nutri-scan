@@ -137,3 +137,21 @@ python scripts/train_classifier.py \
   --config configs/baseline_training.json \
   --processed-dir data/processed
 ```
+
+## Baseline Evaluation
+
+Evaluation reports are local-only and ignored by git. The evaluator writes:
+
+- `reports/baseline-food-classifier/metrics.json`
+- `reports/baseline-food-classifier/confusion_matrix.json`
+
+Run evaluation from a predictions file:
+
+```bash
+python scripts/evaluate_model.py \
+  --predictions-file reports/baseline-food-classifier/predictions.json \
+  --report-dir reports/baseline-food-classifier
+```
+
+The output states whether the MVP targets are met: top-1 accuracy at least 80% and
+top-3 accuracy at least 90%.
