@@ -68,3 +68,50 @@ Health check:
 ```bash
 curl http://localhost:8000/healthz
 ```
+
+## Dataset Preparation
+
+Raw and processed datasets are local-only.
+
+Expected raw layout:
+
+```txt
+data/raw/
+  nasi_goreng/
+  sate/
+  rendang/
+  bakso/
+  gado_gado/
+  soto/
+  pempek/
+  gudeg/
+```
+
+Dry run:
+
+```bash
+python scripts/prepare_dataset.py \
+  --raw-dir data/raw \
+  --processed-dir data/processed \
+  --class-map configs/mvp_food_categories.json \
+  --dry-run
+```
+
+Write train/validation/test split:
+
+```bash
+python scripts/prepare_dataset.py \
+  --raw-dir data/raw \
+  --processed-dir data/processed \
+  --class-map configs/mvp_food_categories.json \
+  --seed 42
+```
+
+Output layout:
+
+```txt
+data/processed/
+  train/<food_category>/
+  validation/<food_category>/
+  test/<food_category>/
+```
