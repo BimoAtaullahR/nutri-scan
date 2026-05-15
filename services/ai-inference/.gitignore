@@ -3,9 +3,7 @@ data/processed/
 model-artifacts/*
 !model-artifacts/.gitkeep
 notebooks/.ipynb_checkpoints/
-reports/*.json
-reports/*.csv
-reports/*.png
+reports/
 __pycache__/
 **/__pycache__/
 .pytest_cache/

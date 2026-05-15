@@ -11,3 +11,6 @@ Use the default Matt Pocock skills triage label vocabulary. See `docs/agents/tri
 ### Domain docs
 
 This repo uses a multi-context domain-doc layout with `CONTEXT-MAP.md` at the root. See `docs/agents/domain.md`.
+
+# Note
+use best practices conventional commits message 
