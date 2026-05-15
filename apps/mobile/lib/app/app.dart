@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-
-import '../features/scan/presentation/pages/scan_page.dart';
 import 'theme/app_theme.dart';
+import 'router/app_router.dart';
 
 class NutriScanApp extends StatelessWidget {
   const NutriScanApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'NutriScan',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const ScanPage(),
+      routerConfig: AppRouter.router,
     );
   }
 }
