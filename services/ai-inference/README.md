@@ -44,6 +44,8 @@ Use `model-artifacts/` only as a local placeholder for runtime files downloaded 
 
 Keep raw and processed datasets local under `data/raw/` and `data/processed/`. Commit only manifests, scripts, and lightweight config.
 
+For teammate dataset sharing, see `DATASET_COLLABORATION.md`.
+
 ## Local Setup
 
 Use Python 3.12 or newer.
