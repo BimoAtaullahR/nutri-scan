@@ -31,6 +31,4 @@ def test_gitignore_keeps_large_ai_artifacts_local():
     assert "data/processed/" in gitignore
     assert "model-artifacts/*" in gitignore
     assert "!model-artifacts/.gitkeep" in gitignore
-    assert "reports/*.json" in gitignore
-    assert "reports/*.csv" in gitignore
-    assert "reports/*.png" in gitignore
+    assert "reports/" in gitignore

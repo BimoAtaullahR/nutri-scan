@@ -1,8 +1,8 @@
 # MVP Food Dataset Manifest
 
-Reviewed: 2026-05-09
+Reviewed: 2026-05-15
 
-This manifest records candidate data sources for NutriScan's MVP food classifier and energy estimate workflow. It is not a downloaded dataset manifest yet; update counts after files are actually downloaded, cleaned, deduplicated, and split.
+This manifest records candidate data sources and the curated local split counts for NutriScan's MVP food classifier and energy estimate workflow.
 
 ## MVP Scope
 
@@ -232,18 +232,29 @@ copy final reviewed counts into the table below.
 
 ## Final Reviewed Counts
 
-Status: pending real local dataset curation.
+Status: curated local processed dataset audited on 2026-05-15.
+
+Audit command:
+
+```bash
+python scripts/curate_dataset.py \
+  --processed-dir data/processed \
+  --class-map configs/mvp_food_categories.json \
+  --report-path reports/dataset-curation/curation_report.json
+```
+
+Total curated images: 3,419.
 
 | Class | Train | Validation | Test | Total | Reviewed >= 100 | Risks |
 | --- | ---: | ---: | ---: | ---: | --- | --- |
-| `nasi_goreng` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
-| `sate` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
-| `rendang` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
-| `bakso` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
-| `gado_gado` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
-| `soto` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
-| `pempek` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
-| `gudeg` | TBD | TBD | TBD | TBD | TBD | Pending manual review |
+| `nasi_goreng` | 356 | 64 | 87 | 507 | Yes | None from audit |
+| `sate` | 353 | 75 | 81 | 509 | Yes | None from audit |
+| `rendang` | 231 | 45 | 52 | 328 | Yes | None from audit |
+| `bakso` | 309 | 62 | 69 | 440 | Yes | None from audit |
+| `gado_gado` | 251 | 33 | 58 | 342 | Yes | None from audit |
+| `soto` | 331 | 72 | 109 | 512 | Yes | None from audit |
+| `pempek` | 296 | 44 | 84 | 424 | Yes | None from audit |
+| `gudeg` | 237 | 43 | 77 | 357 | Yes | None from audit |
 
 ## MVP Acceptance Targets
 
