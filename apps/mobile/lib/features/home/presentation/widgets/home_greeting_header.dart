@@ -17,16 +17,16 @@ class HomeGreetingHeader extends StatelessWidget {
               Text(
                 'Hello,',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.darkNavy,
-                      fontWeight: FontWeight.w900, // Very bold
-                    ),
+                  color: AppColors.darkNavy,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               Text(
                 'Daniel Chald',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.darkNavy,
-                      fontWeight: FontWeight.w400, // Normal
-                    ),
+                  color: AppColors.darkNavy,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ],
           ),
@@ -34,7 +34,7 @@ class HomeGreetingHeader extends StatelessWidget {
             radius: 20,
             backgroundColor: AppColors.primaryGreen,
             child: Icon(Icons.person, color: AppColors.darkNavy, size: 24),
-          )
+          ),
         ],
       ),
     );

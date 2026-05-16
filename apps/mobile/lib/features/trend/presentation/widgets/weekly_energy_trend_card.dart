@@ -58,9 +58,9 @@ class WeeklyEnergyTrendCard extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           day,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.neutralMuted,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.neutralMuted),
         ),
       ],
     );

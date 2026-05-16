@@ -26,7 +26,7 @@ class HomePage extends StatelessWidget {
               WaterTrackingSection(),
               SizedBox(height: 24),
               AchievementsSection(),
-              SizedBox(height: 48), // Bottom padding
+              SizedBox(height: 48),
             ],
           ),
         ),

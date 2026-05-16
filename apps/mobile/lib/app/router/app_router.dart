@@ -14,22 +14,13 @@ class AppRouter {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const HomePage(),
-      ),
-      GoRoute(
-        path: '/scan',
-        builder: (context, state) => const ScanPage(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const HomePage()),
+      GoRoute(path: '/scan', builder: (context, state) => const ScanPage()),
       GoRoute(
         path: '/result',
         builder: (context, state) => const ScanResultPage(),
       ),
-      GoRoute(
-        path: '/trend',
-        builder: (context, state) => const TrendPage(),
-      ),
+      GoRoute(path: '/trend', builder: (context, state) => const TrendPage()),
       GoRoute(
         path: '/history',
         builder: (context, state) => const HistoryPage(),

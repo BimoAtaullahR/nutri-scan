@@ -13,7 +13,6 @@ class ScanPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scanState = ref.watch(scanControllerProvider);
 
-    // Listen to state changes to navigate when success
     ref.listen<ScanState>(scanControllerProvider, (previous, next) {
       if (next.status == ScanStatus.success) {
         context.pushReplacement('/result');

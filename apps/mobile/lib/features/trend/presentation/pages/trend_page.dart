@@ -8,9 +8,7 @@ class TrendPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Energy Trend'),
-      ),
+      appBar: AppBar(title: const Text('Energy Trend')),
       body: const SingleChildScrollView(
         padding: EdgeInsets.all(24.0),
         child: Column(

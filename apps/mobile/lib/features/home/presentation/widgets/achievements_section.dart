@@ -14,9 +14,9 @@ class AchievementsSection extends StatelessWidget {
           Text(
             'Want To Record Your Achievements?',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.darkNavy,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: AppColors.darkNavy,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
@@ -43,7 +43,7 @@ class AchievementsSection extends StatelessWidget {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

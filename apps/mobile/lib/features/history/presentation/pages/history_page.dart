@@ -7,9 +7,7 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Meal History'),
-      ),
+      appBar: AppBar(title: const Text('Meal History')),
       body: const MealHistoryList(),
     );
   }

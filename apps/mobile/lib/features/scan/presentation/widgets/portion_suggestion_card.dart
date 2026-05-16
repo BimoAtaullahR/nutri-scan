@@ -14,7 +14,10 @@ class PortionSuggestionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb_outline, color: AppColors.primaryGreen),
+              const Icon(
+                Icons.lightbulb_outline,
+                color: AppColors.primaryGreen,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Saran Porsi',

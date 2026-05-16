@@ -15,11 +15,7 @@ class ScannerPreviewFrame extends StatelessWidget {
         border: Border.all(color: AppColors.primaryGreen, width: 2),
       ),
       child: const Center(
-        child: Icon(
-          Icons.restaurant,
-          size: 64,
-          color: AppColors.neutralMuted,
-        ),
+        child: Icon(Icons.restaurant, size: 64, color: AppColors.neutralMuted),
       ),
     );
   }

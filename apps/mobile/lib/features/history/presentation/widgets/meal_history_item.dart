@@ -38,16 +38,13 @@ class MealHistoryItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
+                  Text(title, style: Theme.of(context).textTheme.labelLarge),
                   const SizedBox(height: 4),
                   Text(
                     '$calories kcal • $time',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.neutralMuted,
-                        ),
+                      color: AppColors.neutralMuted,
+                    ),
                   ),
                 ],
               ),
