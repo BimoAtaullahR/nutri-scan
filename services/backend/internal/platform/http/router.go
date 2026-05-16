@@ -35,7 +35,7 @@ func NewRouter(cfg config.Config, db *database.DB, logger *slog.Logger) http.Han
 	userHandler := user.NewHandler(userStore, logger)
 	userHandler.RegisterRoutes(r)
 	scan.NewHandler(scan.NewPostgresStore(db.Pool), userStore, scan.NewHTTPInferenceClient(cfg.AIInferenceURL), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
-	trend.NewHandler(logger).RegisterRoutes(r)
+	trend.NewHandler(trend.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
 	summary.NewHandler(summary.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
 	nudge.NewHandler(nudge.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
 
