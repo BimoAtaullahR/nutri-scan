@@ -15,9 +15,9 @@ class ScanFoodCtaCard extends StatelessWidget {
           Text(
             'Take A Photo Of What You\'re Eating',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.darkNavy,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: AppColors.darkNavy,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           GestureDetector(
@@ -28,7 +28,7 @@ class ScanFoodCtaCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E2D6), // Greyish green background
+                  color: const Color(0xFFE2E2D6),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -42,9 +42,9 @@ class ScanFoodCtaCard extends StatelessWidget {
                     Text(
                       'Take Your Photo',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFFB5B5A5),
-                            fontWeight: FontWeight.w500,
-                          ),
+                        color: const Color(0xFFB5B5A5),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -67,11 +67,15 @@ class _DashedRectPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
-    
+
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), const Radius.circular(12)));
-    
-    // Simple dashing by just using a path metric
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          const Radius.circular(12),
+        ),
+      );
+
     final dashPath = Path();
     for (final metric in path.computeMetrics()) {
       double distance = 0;
@@ -79,7 +83,10 @@ class _DashedRectPainter extends CustomPainter {
       while (distance < metric.length) {
         final length = draw ? 8.0 : 6.0;
         if (draw) {
-          dashPath.addPath(metric.extractPath(distance, distance + length), Offset.zero);
+          dashPath.addPath(
+            metric.extractPath(distance, distance + length),
+            Offset.zero,
+          );
         }
         distance += length;
         draw = !draw;

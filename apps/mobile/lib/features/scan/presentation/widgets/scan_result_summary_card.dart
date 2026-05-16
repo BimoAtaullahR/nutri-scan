@@ -25,9 +25,9 @@ class ScanResultSummaryCard extends StatelessWidget {
           Text(
             'Estimasi Energi: 450 kcal',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.energyOrange,
-                ),
+              fontWeight: FontWeight.bold,
+              color: AppColors.energyOrange,
+            ),
           ),
         ],
       ),

@@ -25,10 +25,7 @@ class AppButton extends StatelessWidget {
           label: Text(label),
         );
       }
-      return ElevatedButton(
-        onPressed: onPressed,
-        child: Text(label),
-      );
+      return ElevatedButton(onPressed: onPressed, child: Text(label));
     } else {
       if (icon != null) {
         return OutlinedButton.icon(
@@ -39,7 +36,9 @@ class AppButton extends StatelessWidget {
             foregroundColor: AppColors.darkNavy,
             side: const BorderSide(color: AppColors.borderSoft),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
           ),
         );
       }
@@ -49,7 +48,9 @@ class AppButton extends StatelessWidget {
           foregroundColor: AppColors.darkNavy,
           side: const BorderSide(color: AppColors.borderSoft),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
         ),
         child: Text(label),
       );

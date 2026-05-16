@@ -28,7 +28,6 @@ class ScanController extends Notifier<ScanState> {
 
   Future<void> analyzeImage() async {
     state = state.copyWith(status: ScanStatus.analyzing);
-    // Simulate AI inference delay
     await Future.delayed(const Duration(seconds: 2));
     state = state.copyWith(status: ScanStatus.success);
   }

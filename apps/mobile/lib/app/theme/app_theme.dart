@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Theme from Figma / Images
-  static const Color primaryGreen = Color(0xFFE7F1A8); // Lime Green
-  static const Color darkNavy = Color(0xFF364C84); // Typography & Authority
-  static const Color lightBlue = Color(0xFF95B1EE); // The Magical Vibe
-  static const Color backgroundCream = Color(0xFFFFFDF5); // Warm Cream
+  static const Color primaryGreen = Color(0xFFE7F1A8);
+  static const Color darkNavy = Color(0xFF364C84);
+  static const Color lightBlue = Color(0xFF95B1EE);
+  static const Color backgroundCream = Color(0xFFFFFDF5);
 
-  // Supporting Colors
   static const Color cardWhite = Colors.white;
   static const Color neutralBody = Color(0xFF4B5563);
   static const Color neutralMuted = Color(0xFF9CA3AF);
@@ -30,13 +28,28 @@ class AppTheme {
         onPrimary: AppColors.darkNavy,
       ),
       textTheme: const TextTheme(
-        displayLarge: TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.bold),
-        displayMedium: TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.bold),
-        titleLarge: TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.w700),
-        titleMedium: TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.w600),
+        displayLarge: TextStyle(
+          color: AppColors.darkNavy,
+          fontWeight: FontWeight.bold,
+        ),
+        displayMedium: TextStyle(
+          color: AppColors.darkNavy,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: TextStyle(
+          color: AppColors.darkNavy,
+          fontWeight: FontWeight.w700,
+        ),
+        titleMedium: TextStyle(
+          color: AppColors.darkNavy,
+          fontWeight: FontWeight.w600,
+        ),
         bodyLarge: TextStyle(color: AppColors.neutralBody),
         bodyMedium: TextStyle(color: AppColors.neutralBody),
-        labelLarge: TextStyle(color: AppColors.darkNavy, fontWeight: FontWeight.w600),
+        labelLarge: TextStyle(
+          color: AppColors.darkNavy,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.backgroundCream,

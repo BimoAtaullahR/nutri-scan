@@ -14,15 +14,15 @@ class WaterTrackingSection extends StatelessWidget {
           Text(
             'Track How Much You\'ve Drunk Today',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.darkNavy,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: AppColors.darkNavy,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.primaryGreen, // Light green card
+              color: AppColors.primaryGreen,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -71,7 +71,7 @@ class WaterTrackingSection extends StatelessWidget {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -80,7 +80,9 @@ class WaterTrackingSection extends StatelessWidget {
   Widget _buildDrop({required bool active}) {
     return Icon(
       Icons.water_drop,
-      color: active ? AppColors.lightBlue : AppColors.lightBlue.withValues(alpha: 0.5),
+      color: active
+          ? AppColors.lightBlue
+          : AppColors.lightBlue.withValues(alpha: 0.5),
       size: 32,
     );
   }
@@ -94,11 +96,7 @@ class WaterTrackingSection extends StatelessWidget {
         color: AppColors.lightBlue,
         shape: BoxShape.circle,
       ),
-      child: const Icon(
-        Icons.add,
-        color: AppColors.darkNavy,
-        size: 16,
-      ),
+      child: const Icon(Icons.add, color: AppColors.darkNavy, size: 16),
     );
   }
 }
