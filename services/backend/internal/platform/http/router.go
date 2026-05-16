@@ -8,14 +8,16 @@ import (
 
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/nudge"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/platform/config"
+	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/platform/database"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/scan"
+	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/summary"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/trend"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewRouter(cfg config.Config, logger *slog.Logger) http.Handler {
+func NewRouter(cfg config.Config, db *database.DB, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -29,10 +31,13 @@ func NewRouter(cfg config.Config, logger *slog.Logger) http.Handler {
 		})
 	})
 
-	user.NewHandler(logger).RegisterRoutes(r)
-	scan.NewHandler(cfg.AIInferenceURL, logger).RegisterRoutes(r)
-	trend.NewHandler(logger).RegisterRoutes(r)
-	nudge.NewHandler(logger).RegisterRoutes(r)
+	userStore := user.NewPostgresStore(db.Pool)
+	userHandler := user.NewHandler(userStore, logger)
+	userHandler.RegisterRoutes(r)
+	scan.NewHandler(scan.NewPostgresStore(db.Pool), userStore, scan.NewHTTPInferenceClient(cfg.AIInferenceURL), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
+	trend.NewHandler(trend.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
+	summary.NewHandler(summary.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
+	nudge.NewHandler(nudge.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
 
 	return r
 }
