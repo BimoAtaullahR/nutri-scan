@@ -20,8 +20,8 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 - [x] #18 Implement User Profile With BMI Category
 - [x] #19 Finalize Backend API Contracts For Core Scan Loop
 - [x] #20 Create Sync-First Scan With Fakeable AI Client
-- [ ] #21 Produce Backend-Owned Nudge Decisions
-- [ ] #22 Record Nudge Responses
+- [x] #21 Produce Backend-Owned Nudge Decisions
+- [x] #22 Record Nudge Responses
 - [ ] #23 Expose Daily Energy Summary And Meal Energy Summary
 - [ ] #24 Expose Weekly Energy Trend
 - [ ] #25 Wire End-to-End Core Scan Loop Smoke Test
@@ -33,3 +33,5 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 - 2026-05-16: Completed #19. Backend API OpenAPI now defines the Core Scan Loop mobile contract for Anonymous User auth, User Profile, Sync-First Scan upload and polling, Nudge Decision responses, Daily Energy Summary, Meal Energy Summary, and Weekly Energy Trend without adding scan image storage. Ran `ruby -e 'require "psych"; Psych.load_file("packages/contracts/openapi/backend-api.yaml"); puts "openapi yaml ok"'`, `ruby -e 'require "json"; JSON.parse(File.read("packages/contracts/ai-inference/scan-inference.schema.json")); puts "ai schema json ok"'`, and an OpenAPI local `$ref` check.
 - 2026-05-16: Completed #20. Sync-First Scan creation now requires the Anonymous User bearer token, validates JPEG/PNG/WebP Scan Images up to 8 MB, assigns Meal Type from the request or fallback windows, persists Scan Lifecycle state, forwards Scan Image bytes to a fakeable AI/ML Inference client without default image storage, returns completed feedback for fast inference, preserves processing state on inference timeout, records failed state for technical or invalid inference failures, and supports owner-scoped Scan retrieval. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./internal/scan` and `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` in `services/backend`.
 - 2026-05-16: Blocked completing #21 after implementation and tests because `.git` is mounted read-only and `git add` cannot create `.git/index.lock`; leave #21 unchecked until the changes can be committed. Worktree now produces and persists backend-owned Nudge Decisions from inference results, returns Generic Nudge Decisions without a User Profile, returns Personalized Nudge Decisions when profile BMI Category is available, and completes low-confidence scans with a Review Food Nudge instead of treating them as failures. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./internal/scan ./internal/nudge` and `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` in `services/backend`.
+- 2026-05-16: Unblocked and committed #20 and #21.
+- 2026-05-16: Completed #22. Record Nudge Responses endpoint now accepts requests, validates JSON, verifies nudge ownership against the user's completed scans, and persists the response in PostgreSQL `nudge_responses` table. Integrated into the Chi router. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./internal/nudge` and `go build ./...` in `services/backend`.

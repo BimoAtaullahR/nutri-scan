@@ -2,10 +2,13 @@ package nudge
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"math"
 	"net/http"
+	"time"
 
+	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -117,22 +120,130 @@ func displayFoodCategory(foodCategory string) string {
 
 type Handler struct {
 	logger *slog.Logger
+	store  Store
 }
 
-func NewHandler(logger *slog.Logger) *Handler {
-	return &Handler{logger: logger}
+func NewHandler(store Store, logger *slog.Logger) *Handler {
+	return &Handler{
+		logger: logger,
+		store:  store,
+	}
 }
 
-func (h *Handler) RegisterRoutes(r chi.Router) {
-	r.Post("/nudges/{nudgeID}/responses", h.recordResponse)
+func (h *Handler) RegisterRoutes(r chi.Router, requireAnonymousUser func(http.Handler) http.Handler) {
+	r.Group(func(r chi.Router) {
+		r.Use(requireAnonymousUser)
+		r.Post("/nudges/{nudgeID}/responses", h.recordResponse)
+	})
 }
 
 func (h *Handler) recordResponse(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusNotImplemented, map[string]string{
-		"error":   "not_implemented",
-		"message": "nudge response recording is not implemented yet",
-		"nudgeId": chi.URLParam(r, "nudgeID"),
+	anonymousUser, ok := user.AnonymousUserFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "anonymous_user_context_missing",
+			"message": "anonymous user context is missing",
+		})
+		return
+	}
+
+	nudgeID := chi.URLParam(r, "nudgeID")
+	if _, err := uuid.Parse(nudgeID); err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error":   "nudge_not_found",
+			"message": "nudge was not found",
+		})
+		return
+	}
+
+	var request recordNudgeResponseRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_nudge_response_request",
+			"message": "nudge response request must be valid JSON",
+		})
+		return
+	}
+
+	if validationErr := request.validate(); validationErr != "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error":   "invalid_nudge_response_request",
+			"message": validationErr,
+		})
+		return
+	}
+
+	err := h.store.VerifyNudgeOwnership(r.Context(), anonymousUser.ID, request.ScanID, nudgeID)
+	if errors.Is(err, ErrNudgeNotFound) {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error":   "nudge_not_found",
+			"message": "nudge was not found",
+		})
+		return
+	}
+	if err != nil {
+		h.logger.Error("failed to verify nudge ownership", "nudge_id", nudgeID, "anonymous_user_id", anonymousUser.ID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "nudge_verification_failed",
+			"message": "nudge ownership could not be verified",
+		})
+		return
+	}
+
+	record, err := h.store.RecordResponse(r.Context(), ResponseRecord{
+		ID:              uuid.NewString(),
+		ScanID:          request.ScanID,
+		AnonymousUserID: anonymousUser.ID,
+		Response:        request.Response,
 	})
+	if err != nil {
+		h.logger.Error("failed to record nudge response", "nudge_id", nudgeID, "anonymous_user_id", anonymousUser.ID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error":   "nudge_response_record_failed",
+			"message": "nudge response could not be recorded",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, newNudgeResponseResponse(record, nudgeID))
+}
+
+type recordNudgeResponseRequest struct {
+	ScanID   string `json:"scanId"`
+	Response string `json:"response"`
+}
+
+func (r recordNudgeResponseRequest) validate() string {
+	if _, err := uuid.Parse(r.ScanID); err != nil {
+		return "scanId must be a valid UUID"
+	}
+
+	switch r.Response {
+	case "followed", "did_not_follow", "dismissed":
+		return ""
+	default:
+		return "response must be one of followed, did_not_follow, or dismissed"
+	}
+}
+
+type nudgeResponseResponse struct {
+	NudgeResponseID string    `json:"nudgeResponseId"`
+	NudgeID         string    `json:"nudgeId"`
+	ScanID          string    `json:"scanId"`
+	Response        string    `json:"response"`
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
+func newNudgeResponseResponse(record ResponseRecord, nudgeID string) nudgeResponseResponse {
+	return nudgeResponseResponse{
+		NudgeResponseID: record.ID,
+		NudgeID:         nudgeID,
+		ScanID:          record.ScanID,
+		Response:        record.Response,
+		CreatedAt:       record.CreatedAt,
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {
