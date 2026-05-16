@@ -24,7 +24,7 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 - [x] #22 Record Nudge Responses
 - [x] #23 Expose Daily Energy Summary And Meal Energy Summary
 - [x] #24 Expose Weekly Energy Trend
-- [ ] #25 Wire End-to-End Core Scan Loop Smoke Test
+- [x] #25 Wire End-to-End Core Scan Loop Smoke Test
 
 ## Run Log
 
@@ -37,3 +37,4 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 - 2026-05-16: Completed #22. Record Nudge Responses endpoint now accepts requests, validates JSON, verifies nudge ownership against the user's completed scans, and persists the response in PostgreSQL `nudge_responses` table. Integrated into the Chi router. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./internal/nudge` and `go build ./...` in `services/backend`.
 - 2026-05-16: Completed #23. Implemented `internal/summary` module exposing `GET /summaries/daily`. It accepts an optional `date` query param, groups completed scans by meal type from the `scans` table, calculates `eatenEnergyKcal`, defaults `dailyGoalEnergyKcal` to 2000 for MVP, and computes `remainingEnergyKcal`. Registered the route in Chi with Anonymous User authentication. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` and `go build ./...` in `services/backend`.
 - 2026-05-16: Completed #24. Implemented `internal/trend` module exposing `GET /trends/weekly`. It accepts an optional `weekStart` query param (defaulting to the current week's Monday), queries the `scans` table grouping by day using PostgreSQL `date_trunc`, computes `eatenEnergyKcal` and `scanCount` per day, and zero-fills any missing days in the 7-day week window. Registered the route in Chi with Anonymous User authentication. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` and `go build ./...` in `services/backend`.
+- 2026-05-16: Completed #25. Wrote `TestCoreScanLoopSmoke` in `cmd/api/smoke_test.go` that spins up a real `httptest` Server with the Chi router, a fake AI Inference server, and a real Postgres connection (if `TEST_DATABASE_URL` is provided). The test executes the full core scan loop: anonymous user creation, profile update, sync-first scan upload (with polling fallback), recording a nudge response, and querying daily/weekly aggregations to verify end-to-end integration without mock boundaries. Ran `go test ./cmd/api -v` successfully.
