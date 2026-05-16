@@ -10,6 +10,7 @@ import (
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/platform/config"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/platform/database"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/scan"
+	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/summary"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/trend"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/user"
 	"github.com/go-chi/chi/v5"
@@ -35,6 +36,7 @@ func NewRouter(cfg config.Config, db *database.DB, logger *slog.Logger) http.Han
 	userHandler.RegisterRoutes(r)
 	scan.NewHandler(scan.NewPostgresStore(db.Pool), userStore, scan.NewHTTPInferenceClient(cfg.AIInferenceURL), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
 	trend.NewHandler(logger).RegisterRoutes(r)
+	summary.NewHandler(summary.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
 	nudge.NewHandler(nudge.NewPostgresStore(db.Pool), logger).RegisterRoutes(r, userHandler.RequireAnonymousUser)
 
 	return r

@@ -22,7 +22,7 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 - [x] #20 Create Sync-First Scan With Fakeable AI Client
 - [x] #21 Produce Backend-Owned Nudge Decisions
 - [x] #22 Record Nudge Responses
-- [ ] #23 Expose Daily Energy Summary And Meal Energy Summary
+- [x] #23 Expose Daily Energy Summary And Meal Energy Summary
 - [ ] #24 Expose Weekly Energy Trend
 - [ ] #25 Wire End-to-End Core Scan Loop Smoke Test
 
@@ -35,3 +35,4 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 - 2026-05-16: Blocked completing #21 after implementation and tests because `.git` is mounted read-only and `git add` cannot create `.git/index.lock`; leave #21 unchecked until the changes can be committed. Worktree now produces and persists backend-owned Nudge Decisions from inference results, returns Generic Nudge Decisions without a User Profile, returns Personalized Nudge Decisions when profile BMI Category is available, and completes low-confidence scans with a Review Food Nudge instead of treating them as failures. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./internal/scan ./internal/nudge` and `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` in `services/backend`.
 - 2026-05-16: Unblocked and committed #20 and #21.
 - 2026-05-16: Completed #22. Record Nudge Responses endpoint now accepts requests, validates JSON, verifies nudge ownership against the user's completed scans, and persists the response in PostgreSQL `nudge_responses` table. Integrated into the Chi router. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./internal/nudge` and `go build ./...` in `services/backend`.
+- 2026-05-16: Completed #23. Implemented `internal/summary` module exposing `GET /summaries/daily`. It accepts an optional `date` query param, groups completed scans by meal type from the `scans` table, calculates `eatenEnergyKcal`, defaults `dailyGoalEnergyKcal` to 2000 for MVP, and computes `remainingEnergyKcal`. Registered the route in Chi with Anonymous User authentication. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` and `go build ./...` in `services/backend`.
