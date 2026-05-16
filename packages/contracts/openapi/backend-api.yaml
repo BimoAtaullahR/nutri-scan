@@ -3,10 +3,16 @@ info:
   title: NutriScan Backend API
   version: 0.1.0
   description: Contract for the Mobile App to Backend API boundary.
+servers:
+  - url: http://localhost:8080
+    description: Local Backend API
+security:
+  - AnonymousBearer: []
 paths:
   /healthz:
     get:
       summary: Check Backend API health.
+      security: []
       responses:
         "200":
           description: Backend API is healthy.
@@ -16,22 +22,40 @@ paths:
                 $ref: "#/components/schemas/HealthResponse"
   /anonymous-users:
     post:
-      summary: Create an anonymous user identity.
+      summary: Create an Anonymous User identity.
+      description: Returns a bearer token used to own Scans, User Profile data, summaries, and trends.
+      security: []
       responses:
         "201":
-          description: Anonymous user identity created.
+          description: Anonymous User identity created.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnonymousUserToken"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /me/profile:
     get:
-      summary: Get the current anonymous user's profile.
+      summary: Get the current Anonymous User's User Profile.
       responses:
-        "501":
-          description: Contract placeholder. Endpoint shape is not finalized yet.
+        "200":
+          description: User Profile found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: User Profile has not been created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
     put:
-      summary: Create or update the current anonymous user's profile.
+      summary: Create or update the current Anonymous User's User Profile.
       requestBody:
         required: true
         content:
@@ -39,47 +63,215 @@ paths:
             schema:
               $ref: "#/components/schemas/UpdateUserProfileRequest"
       responses:
-        "501":
-          description: Contract placeholder. Endpoint shape is not finalized yet.
+        "200":
+          description: User Profile saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /scans:
     post:
-      summary: Create a scan from a food image.
-      description: Accepts a mobile multipart image upload and returns scan feedback when processing completes within the request window.
+      summary: Create a Sync-First Scan from a Scan Image.
+      description: Accepts a multipart Scan Image, forwards it to AI/ML Inference without default long-term image storage, and returns completed feedback when inference finishes inside the request window.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateScanRequest"
       responses:
-        "501":
-          description: Contract placeholder. Endpoint shape is not finalized yet.
+        "201":
+          description: Scan reached completed or failed state inside the request window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "202":
+          description: Scan is still processing and can be polled by ID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /scans/{scanId}:
     get:
-      summary: Get a scan by ID.
+      summary: Get a Scan by ID.
+      parameters:
+        - $ref: "#/components/parameters/ScanId"
       responses:
-        "501":
-          description: Contract placeholder. Endpoint shape is not finalized yet.
+        "200":
+          description: Scan found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Scan was not found for the current Anonymous User.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /summaries/daily:
+    get:
+      summary: Get a Daily Energy Summary and Meal Energy Summary.
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Local calendar date to summarize. Defaults to today.
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Daily Energy Summary for the current Anonymous User.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyEnergySummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /trends/weekly:
     get:
-      summary: Get weekly energy trend data.
+      summary: Get Weekly Energy Trend data.
+      parameters:
+        - name: weekStart
+          in: query
+          required: false
+          description: Local week start date. Defaults to the current week.
+          schema:
+            type: string
+            format: date
       responses:
-        "501":
-          description: Contract placeholder. Endpoint shape is not finalized yet.
+        "200":
+          description: Weekly Energy Trend from completed Scans.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyEnergyTrend"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /nudges/{nudgeId}/responses:
     post:
-      summary: Record a user response to a preventive nudge.
+      summary: Record an Anonymous User response to a Nudge Decision.
+      parameters:
+        - $ref: "#/components/parameters/NudgeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordNudgeResponseRequest"
       responses:
-        "501":
-          description: Contract placeholder. Endpoint shape is not finalized yet.
+        "201":
+          description: Nudge response recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NudgeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Nudge Decision was not found for the current Anonymous User.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
+  securitySchemes:
+    AnonymousBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Anonymous User bearer token returned by `POST /anonymous-users`.
+  parameters:
+    ScanId:
+      name: scanId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NudgeId:
+      name: nudgeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Anonymous User bearer token is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Backend API could not complete the request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     HealthResponse:
       type: object
+      additionalProperties: false
       properties:
         status:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
     AnonymousUserToken:
       type: object
+      additionalProperties: false
       properties:
         anonymousUserId:
           type: string
+          format: uuid
         accessToken:
           type: string
         tokenType:
@@ -92,45 +284,355 @@ components:
         - tokenType
     UpdateUserProfileRequest:
       type: object
+      additionalProperties: false
       properties:
         heightCm:
           type: number
-          minimum: 1
+          exclusiveMinimum: 0
+          maximum: 300
         weightKg:
           type: number
-          minimum: 1
+          exclusiveMinimum: 0
+          maximum: 500
         ageRange:
-          type: string
-          enum:
-            - under_18
-            - 18_24
-            - 25_34
-            - 35_44
-            - 45_54
-            - 55_plus
+          $ref: "#/components/schemas/AgeRange"
       required:
         - heightCm
         - weightKg
     UserProfile:
       type: object
+      additionalProperties: false
       properties:
         heightCm:
           type: number
         weightKg:
           type: number
         ageRange:
-          type: string
+          $ref: "#/components/schemas/AgeRange"
         bmi:
           type: number
         bmiCategory:
-          type: string
-          enum:
-            - underweight
-            - normal
-            - overweight
-            - obese
+          $ref: "#/components/schemas/BMICategory"
       required:
         - heightCm
         - weightKg
         - bmi
         - bmiCategory
+    AgeRange:
+      type: string
+      enum:
+        - under_18
+        - 18_24
+        - 25_34
+        - 35_44
+        - 45_54
+        - 55_plus
+    BMICategory:
+      type: string
+      enum:
+        - underweight
+        - normal
+        - overweight
+        - obese
+    CreateScanRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        image:
+          type: string
+          format: binary
+          description: JPEG, PNG, or WebP Scan Image, capped at 8 MB.
+        mealType:
+          $ref: "#/components/schemas/MealType"
+      required:
+        - image
+    Scan:
+      type: object
+      additionalProperties: false
+      properties:
+        scanId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ScanStatus"
+        mealType:
+          $ref: "#/components/schemas/MealType"
+        estimatedEnergyKcal:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        estimatedEnergyRange:
+          oneOf:
+            - $ref: "#/components/schemas/EstimatedEnergyRange"
+            - type: "null"
+        inference:
+          oneOf:
+            - $ref: "#/components/schemas/InferenceSummary"
+            - type: "null"
+        nudgeDecision:
+          oneOf:
+            - $ref: "#/components/schemas/NudgeDecision"
+            - type: "null"
+        failureReason:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - scanId
+        - status
+        - mealType
+        - estimatedEnergyKcal
+        - estimatedEnergyRange
+        - inference
+        - nudgeDecision
+        - failureReason
+        - createdAt
+        - updatedAt
+    ScanStatus:
+      type: string
+      enum:
+        - processing
+        - completed
+        - failed
+    MealType:
+      type: string
+      enum:
+        - breakfast
+        - lunch
+        - dinner
+        - snack
+    EstimatedEnergyRange:
+      type: object
+      additionalProperties: false
+      properties:
+        minKcal:
+          type: integer
+          minimum: 0
+        maxKcal:
+          type: integer
+          minimum: 0
+      required:
+        - minKcal
+        - maxKcal
+    InferenceSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        foodCategory:
+          type: string
+        foodConfidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        alternatives:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoodCategoryConfidence"
+        coarsePortion:
+          type: string
+          enum:
+            - small
+            - medium
+            - large
+        isLowConfidence:
+          type: boolean
+      required:
+        - foodCategory
+        - foodConfidence
+        - alternatives
+        - coarsePortion
+        - isLowConfidence
+    FoodCategoryConfidence:
+      type: object
+      additionalProperties: false
+      properties:
+        foodCategory:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+      required:
+        - foodCategory
+        - confidence
+    NudgeDecision:
+      type: object
+      additionalProperties: false
+      properties:
+        nudgeId:
+          type: string
+          format: uuid
+        action:
+          $ref: "#/components/schemas/NudgeAction"
+        message:
+          type: string
+        estimatedPreventedEnergyKcal:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+        confidenceLevel:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        isPersonalized:
+          type: boolean
+        basis:
+          type: string
+          enum:
+            - generic
+            - personalized
+            - review_food
+        displayTags:
+          type: array
+          items:
+            type: string
+      required:
+        - nudgeId
+        - action
+        - message
+        - estimatedPreventedEnergyKcal
+        - confidenceLevel
+        - isPersonalized
+        - basis
+        - displayTags
+    NudgeAction:
+      type: string
+      enum:
+        - eat_as_planned
+        - set_aside_portion
+        - review_food
+    RecordNudgeResponseRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        scanId:
+          type: string
+          format: uuid
+        response:
+          $ref: "#/components/schemas/NudgeResponseValue"
+      required:
+        - scanId
+        - response
+    NudgeResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        nudgeResponseId:
+          type: string
+          format: uuid
+        nudgeId:
+          type: string
+          format: uuid
+        scanId:
+          type: string
+          format: uuid
+        response:
+          $ref: "#/components/schemas/NudgeResponseValue"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - nudgeResponseId
+        - nudgeId
+        - scanId
+        - response
+        - createdAt
+    NudgeResponseValue:
+      type: string
+      enum:
+        - followed
+        - did_not_follow
+        - dismissed
+    DailyEnergySummary:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+          format: date
+        eatenEnergyKcal:
+          type: integer
+          minimum: 0
+        remainingEnergyKcal:
+          type: integer
+        burnedEnergyKcal:
+          type: integer
+          minimum: 0
+          description: MVP placeholder until exercise integration exists.
+        dailyGoalEnergyKcal:
+          type: integer
+          minimum: 0
+        meals:
+          type: array
+          items:
+            $ref: "#/components/schemas/MealEnergySummary"
+      required:
+        - date
+        - eatenEnergyKcal
+        - remainingEnergyKcal
+        - burnedEnergyKcal
+        - dailyGoalEnergyKcal
+        - meals
+    MealEnergySummary:
+      type: object
+      additionalProperties: false
+      properties:
+        mealType:
+          $ref: "#/components/schemas/MealType"
+        eatenEnergyKcal:
+          type: integer
+          minimum: 0
+        scanCount:
+          type: integer
+          minimum: 0
+      required:
+        - mealType
+        - eatenEnergyKcal
+        - scanCount
+    WeeklyEnergyTrend:
+      type: object
+      additionalProperties: false
+      properties:
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: "#/components/schemas/DailyEnergyTrendPoint"
+      required:
+        - weekStart
+        - weekEnd
+        - days
+    DailyEnergyTrendPoint:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+          format: date
+        eatenEnergyKcal:
+          type: integer
+          minimum: 0
+        scanCount:
+          type: integer
+          minimum: 0
+      required:
+        - date
+        - eatenEnergyKcal
+        - scanCount

@@ -18,7 +18,7 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 
 - [x] #17 Persist Anonymous User Bearer Identity
 - [x] #18 Implement User Profile With BMI Category
-- [ ] #19 Finalize Backend API Contracts For Core Scan Loop
+- [x] #19 Finalize Backend API Contracts For Core Scan Loop
 - [ ] #20 Create Sync-First Scan With Fakeable AI Client
 - [ ] #21 Produce Backend-Owned Nudge Decisions
 - [ ] #22 Record Nudge Responses
@@ -30,3 +30,4 @@ Parent issue: https://github.com/BimoAtaullahR/nutri-scan/issues/16
 
 - 2026-05-16: Completed #17. Anonymous User creation now persists a UUID identity and hashed bearer token through a PostgreSQL-backed store, adds bearer-token authentication middleware for `/me/profile`, and verifies token hashing/auth behavior with focused backend tests. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` in `services/backend`.
 - 2026-05-16: Completed #18. User Profile read/update now requires the Anonymous User bearer token, persists height, weight, optional age range, derived BMI, and BMI Category, rejects out-of-range measurements before persistence, and returns profile responses without blocking the Core Scan Loop. Ran `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./internal/user` and `GOCACHE="$PWD/.gocache" GONOSUMDB='*' GOPROXY=off GOTOOLCHAIN=local go test -mod=readonly ./...` in `services/backend`.
+- 2026-05-16: Completed #19. Backend API OpenAPI now defines the Core Scan Loop mobile contract for Anonymous User auth, User Profile, Sync-First Scan upload and polling, Nudge Decision responses, Daily Energy Summary, Meal Energy Summary, and Weekly Energy Trend without adding scan image storage. Ran `ruby -e 'require "psych"; Psych.load_file("packages/contracts/openapi/backend-api.yaml"); puts "openapi yaml ok"'`, `ruby -e 'require "json"; JSON.parse(File.read("packages/contracts/ai-inference/scan-inference.schema.json")); puts "ai schema json ok"'`, and an OpenAPI local `$ref` check.
