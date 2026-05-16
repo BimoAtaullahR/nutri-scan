@@ -8,6 +8,7 @@ import (
 
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/nudge"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/platform/config"
+	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/platform/database"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/scan"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/trend"
 	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/user"
@@ -15,7 +16,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewRouter(cfg config.Config, logger *slog.Logger) http.Handler {
+func NewRouter(cfg config.Config, db *database.DB, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -29,7 +30,7 @@ func NewRouter(cfg config.Config, logger *slog.Logger) http.Handler {
 		})
 	})
 
-	user.NewHandler(logger).RegisterRoutes(r)
+	user.NewHandler(user.NewPostgresStore(db.Pool), logger).RegisterRoutes(r)
 	scan.NewHandler(cfg.AIInferenceURL, logger).RegisterRoutes(r)
 	trend.NewHandler(logger).RegisterRoutes(r)
 	nudge.NewHandler(logger).RegisterRoutes(r)
