@@ -26,6 +26,9 @@ class MealHistoryList extends ConsumerWidget {
               calories: result.estimatedEnergyKcal.toString(),
               time: _formatTime(result.capturedAt),
               icon: Icons.restaurant_menu,
+              note: result.suggestionFollowed
+                  ? 'Saran AI sudah diikuti'
+                  : 'Saran AI belum dikonfirmasi',
             ),
           const SizedBox(height: 24),
         ],

@@ -9,6 +9,7 @@ class ScanResult {
   final String auraSuggestion;
   final String dominantPortionLabel;
   final int dominantPortionKcal;
+  final bool suggestionFollowed;
   final DateTime capturedAt;
 
   const ScanResult({
@@ -18,6 +19,7 @@ class ScanResult {
     required this.auraSuggestion,
     required this.dominantPortionLabel,
     required this.dominantPortionKcal,
+    this.suggestionFollowed = false,
     required this.capturedAt,
   });
 
@@ -28,6 +30,7 @@ class ScanResult {
     String? auraSuggestion,
     String? dominantPortionLabel,
     int? dominantPortionKcal,
+    bool? suggestionFollowed,
     DateTime? capturedAt,
   }) {
     return ScanResult(
@@ -37,6 +40,7 @@ class ScanResult {
       auraSuggestion: auraSuggestion ?? this.auraSuggestion,
       dominantPortionLabel: dominantPortionLabel ?? this.dominantPortionLabel,
       dominantPortionKcal: dominantPortionKcal ?? this.dominantPortionKcal,
+      suggestionFollowed: suggestionFollowed ?? this.suggestionFollowed,
       capturedAt: capturedAt ?? this.capturedAt,
     );
   }
@@ -106,6 +110,13 @@ class ScanController extends Notifier<ScanState> {
     state = state.copyWith(isSaved: true);
   }
 
+  void setSuggestionFollowed(bool value) {
+    final result = state.result;
+    if (result == null) return;
+
+    state = state.copyWith(result: result.copyWith(suggestionFollowed: value));
+  }
+
   Future<void> analyzeImage({required String capturedImagePath}) async {
     state = ScanState(
       status: ScanStatus.analyzing,
@@ -122,6 +133,7 @@ class ScanController extends Notifier<ScanState> {
             'Sisihkan sedikit nasi untuk menghemat sekitar 50 kcal.',
         dominantPortionLabel: 'Karbohidrat',
         dominantPortionKcal: 50,
+        suggestionFollowed: false,
         capturedAt: DateTime.now(),
       ),
     );

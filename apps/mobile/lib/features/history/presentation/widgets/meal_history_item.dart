@@ -8,6 +8,7 @@ class MealHistoryItem extends StatelessWidget {
   final String calories;
   final String time;
   final IconData icon;
+  final String? note;
 
   const MealHistoryItem({
     super.key,
@@ -15,6 +16,7 @@ class MealHistoryItem extends StatelessWidget {
     required this.calories,
     required this.time,
     required this.icon,
+    this.note,
   });
 
   @override
@@ -47,6 +49,16 @@ class MealHistoryItem extends StatelessWidget {
                       color: AppColors.neutralMuted,
                     ),
                   ),
+                  if (note != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      note!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.neutralBody,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

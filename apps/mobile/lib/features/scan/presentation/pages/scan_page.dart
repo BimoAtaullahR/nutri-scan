@@ -126,14 +126,12 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     }
   }
 
-  void _saveResult() {
-    ref.read(scanControllerProvider.notifier).saveCurrentResult();
+  Future<void> _openResultPage() async {
+    await _cameraController?.dispose();
+    _cameraController = null;
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('Hasil scan tersimpan di riwayat.')),
-      );
+    if (!mounted) return;
+    context.go('/result');
   }
 
   @override
@@ -175,7 +173,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                     onCapture: _captureAndAnalyze,
                     onReset: () =>
                         ref.read(scanControllerProvider.notifier).reset(),
-                    onSave: _saveResult,
+                    onNext: _openResultPage,
                   ),
                 ],
               ),
@@ -297,14 +295,14 @@ class _ScanBottomAction extends StatelessWidget {
   final bool isCameraReady;
   final VoidCallback onCapture;
   final VoidCallback onReset;
-  final VoidCallback onSave;
+  final VoidCallback onNext;
 
   const _ScanBottomAction({
     required this.scanState,
     required this.isCameraReady,
     required this.onCapture,
     required this.onReset,
-    required this.onSave,
+    required this.onNext,
   });
 
   @override
@@ -325,12 +323,10 @@ class _ScanBottomAction extends StatelessWidget {
           ),
           const SizedBox(width: 18),
           _RoundIconButton(
-            icon: scanState.isSaved ? Icons.check : Icons.bookmark_add,
-            tooltip: scanState.isSaved
-                ? 'Hasil sudah tersimpan'
-                : 'Simpan hasil scan',
+            icon: Icons.arrow_forward,
+            tooltip: 'Lihat detail hasil',
             size: 58,
-            onPressed: scanState.isSaved ? null : onSave,
+            onPressed: onNext,
           ),
         ],
       );
