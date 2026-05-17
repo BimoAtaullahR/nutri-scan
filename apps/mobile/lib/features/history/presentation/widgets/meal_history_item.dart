@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 
@@ -19,7 +20,7 @@ class MealHistoryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: AppCard(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -41,7 +42,7 @@ class MealHistoryItem extends StatelessWidget {
                   Text(title, style: Theme.of(context).textTheme.labelLarge),
                   const SizedBox(height: 4),
                   Text(
-                    '$calories kcal • $time',
+                    '$calories kcal - $time',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.neutralMuted,
                     ),

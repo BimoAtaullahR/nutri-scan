@@ -113,6 +113,29 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     }
   }
 
+  Future<void> _closeScanner() async {
+    await _cameraController?.dispose();
+    _cameraController = null;
+    ref.read(scanControllerProvider.notifier).reset();
+
+    if (!mounted) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
+  }
+
+  void _saveResult() {
+    ref.read(scanControllerProvider.notifier).saveCurrentResult();
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text('Hasil scan tersimpan di riwayat.')),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scanState = ref.watch(scanControllerProvider);
@@ -134,18 +157,25 @@ class _ScanPageState extends ConsumerState<ScanPage> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Column(
                 children: [
-                  _ScanTopBar(onClose: () => context.pop()),
+                  _ScanTopBar(onClose: _closeScanner),
                   const SizedBox(height: 40),
-                  Expanded(child: _ScanGuide(scanState: scanState)),
+                  Expanded(
+                    child: _ScanGuide(
+                      scanState: scanState,
+                      onToggleAuraPlate: () => ref
+                          .read(scanControllerProvider.notifier)
+                          .toggleAuraPlate(),
+                    ),
+                  ),
                   _ScanBottomAction(
                     scanState: scanState,
                     isCameraReady:
                         _cameraController?.value.isInitialized == true &&
                         _cameraError == null,
                     onCapture: _captureAndAnalyze,
-                    onReset: () => ref
-                        .read(scanControllerProvider.notifier)
-                        .reset(),
+                    onReset: () =>
+                        ref.read(scanControllerProvider.notifier).reset(),
+                    onSave: _saveResult,
                   ),
                 ],
               ),
@@ -210,8 +240,9 @@ class _ScanTopBar extends StatelessWidget {
 
 class _ScanGuide extends StatelessWidget {
   final ScanState scanState;
+  final VoidCallback onToggleAuraPlate;
 
-  const _ScanGuide({required this.scanState});
+  const _ScanGuide({required this.scanState, required this.onToggleAuraPlate});
 
   @override
   Widget build(BuildContext context) {
@@ -231,46 +262,27 @@ class _ScanGuide extends StatelessWidget {
                     painter: _DashedFramePainter(color: AppColors.darkNavy),
                   ),
                 ),
-                if (scanState.status == ScanStatus.success) ...[
-                  const Positioned(
-                    left: 26,
-                    top: 62,
-                    child: _NutritionBadge(
-                      label: 'Vitamin',
-                      value: '30 kcal',
-                    ),
-                  ),
-                  const Positioned(
-                    right: 18,
-                    top: 44,
-                    child: _NutritionBadge(
-                      label: 'Protein Utama',
-                      value: '250 kcal',
-                    ),
-                  ),
-                  const Positioned(
+                if (scanState.status == ScanStatus.success)
+                  Positioned(
                     right: -4,
                     top: 114,
                     child: _NutritionBadge(
-                      label: 'Karbohidrat',
-                      value: '200 kcal',
+                      label:
+                          scanState.result?.dominantPortionLabel ??
+                          'Karbohidrat',
+                      value:
+                          '+ ${scanState.result?.dominantPortionKcal ?? 50} kcal',
                     ),
                   ),
-                  const Positioned(
-                    right: 30,
-                    bottom: 62,
-                    child: _NutritionBadge(
-                      label: 'Serat & Mineral',
-                      value: '100 kcal',
-                    ),
-                  ),
-                ],
               ],
             ),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
               child: scanState.status == ScanStatus.success
-                  ? const _EstimateSummary()
+                  ? _EstimateSummary(
+                      scanState: scanState,
+                      onToggleAuraPlate: onToggleAuraPlate,
+                    )
                   : const SizedBox(height: 84),
             ),
           ],
@@ -285,12 +297,14 @@ class _ScanBottomAction extends StatelessWidget {
   final bool isCameraReady;
   final VoidCallback onCapture;
   final VoidCallback onReset;
+  final VoidCallback onSave;
 
   const _ScanBottomAction({
     required this.scanState,
     required this.isCameraReady,
     required this.onCapture,
     required this.onReset,
+    required this.onSave,
   });
 
   @override
@@ -300,11 +314,25 @@ class _ScanBottomAction extends StatelessWidget {
     }
 
     if (scanState.status == ScanStatus.success) {
-      return _RoundIconButton(
-        icon: Icons.refresh,
-        tooltip: 'Scan ulang',
-        size: 58,
-        onPressed: onReset,
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _RoundIconButton(
+            icon: Icons.refresh,
+            tooltip: 'Scan ulang',
+            size: 58,
+            onPressed: onReset,
+          ),
+          const SizedBox(width: 18),
+          _RoundIconButton(
+            icon: scanState.isSaved ? Icons.check : Icons.bookmark_add,
+            tooltip: scanState.isSaved
+                ? 'Hasil sudah tersimpan'
+                : 'Simpan hasil scan',
+            size: 58,
+            onPressed: scanState.isSaved ? null : onSave,
+          ),
+        ],
       );
     }
 
@@ -353,11 +381,7 @@ class _RoundIconButton extends StatelessWidget {
           onTap: onPressed,
           child: SizedBox.square(
             dimension: size,
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: size * 0.46,
-            ),
+            child: Icon(icon, color: Colors.white, size: size * 0.46),
           ),
         ),
       ),
@@ -391,9 +415,9 @@ class _AnalyzingPill extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               'Menganalisis nutrisi...',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Colors.white,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: Colors.white),
             ),
           ],
         ),
@@ -403,10 +427,18 @@ class _AnalyzingPill extends StatelessWidget {
 }
 
 class _EstimateSummary extends StatelessWidget {
-  const _EstimateSummary();
+  final ScanState scanState;
+  final VoidCallback onToggleAuraPlate;
+
+  const _EstimateSummary({
+    required this.scanState,
+    required this.onToggleAuraPlate,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final result = scanState.result;
+
     return Padding(
       key: const ValueKey('estimate-summary'),
       padding: const EdgeInsets.only(top: 12),
@@ -421,30 +453,121 @@ class _EstimateSummary extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            '~580 kcal',
+            '~${result?.estimatedEnergyKcal ?? 580} kcal',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              child: Text(
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: scanState.isAuraPlateRevealed
+                ? _AuraPlateReveal(
+                    key: const ValueKey('aura-reveal'),
+                    headline:
+                        result?.auraHeadline ?? 'Piringmu terlihat seimbang!',
+                    suggestion:
+                        result?.auraSuggestion ??
+                        'Sisihkan sedikit nasi untuk menghemat sekitar 50 kcal.',
+                  )
+                : _AuraPlateButton(
+                    key: const ValueKey('aura-button'),
+                    onPressed: onToggleAuraPlate,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuraPlateButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _AuraPlateButton({super.key, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primaryGreen,
+      borderRadius: BorderRadius.circular(999),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.auto_awesome,
+                size: 14,
+                color: AppColors.darkNavy,
+              ),
+              const SizedBox(width: 6),
+              Text(
                 'Show Aura Plate',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.darkNavy,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AuraPlateReveal extends StatelessWidget {
+  final String headline;
+  final String suggestion;
+
+  const _AuraPlateReveal({
+    super.key,
+    required this.headline,
+    required this.suggestion,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 240),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.primaryGreen,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                headline,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.darkNavy,
+                  fontWeight: FontWeight.w800,
+                  height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                suggestion,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w800,
+                  fontStyle: FontStyle.italic,
+                  height: 1.05,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -481,10 +604,7 @@ class _NutritionBadge extends StatelessWidget {
   final String label;
   final String value;
 
-  const _NutritionBadge({
-    required this.label,
-    required this.value,
-  });
+  const _NutritionBadge({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

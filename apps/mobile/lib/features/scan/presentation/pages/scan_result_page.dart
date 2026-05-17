@@ -12,6 +12,9 @@ class ScanResultPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scanState = ref.watch(scanControllerProvider);
+    final result = scanState.result;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Hasil Scan'),
@@ -28,20 +31,35 @@ class ScanResultPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ScanResultSummaryCard(),
+            ScanResultSummaryCard(result: result),
             const SizedBox(height: 16),
-            const VisualDominanceCard(),
+            VisualDominanceCard(result: result),
             const SizedBox(height: 16),
-            const PortionSuggestionCard(),
+            PortionSuggestionCard(result: result),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               child: AppButton(
-                label: 'Simpan ke Riwayat',
-                onPressed: () {
-                  ref.read(scanControllerProvider.notifier).reset();
-                  context.go('/');
-                },
+                label: scanState.isSaved
+                    ? 'Sudah Tersimpan'
+                    : 'Simpan ke Riwayat',
+                icon: scanState.isSaved ? Icons.check : Icons.bookmark_add,
+                onPressed: result == null || scanState.isSaved
+                    ? null
+                    : () {
+                        ref
+                            .read(scanControllerProvider.notifier)
+                            .saveCurrentResult();
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text('Hasil scan tersimpan di riwayat.'),
+                            ),
+                          );
+                        ref.read(scanControllerProvider.notifier).reset();
+                        context.go('/history');
+                      },
               ),
             ),
           ],

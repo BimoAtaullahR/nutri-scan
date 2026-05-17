@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../controllers/scan_controller.dart';
 
 class PortionSuggestionCard extends StatelessWidget {
-  const PortionSuggestionCard({super.key});
+  final ScanResult? result;
+
+  const PortionSuggestionCard({super.key, this.result});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +30,8 @@ class PortionSuggestionCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Kurangi sedikit nasi sekitar 2 sendok makan untuk menyeimbangkan asupan kalori Anda hari ini.',
+            result?.auraSuggestion ??
+                'Kurangi sedikit nasi sekitar 2 sendok makan untuk menyeimbangkan asupan kalori Anda hari ini.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
