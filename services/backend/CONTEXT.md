@@ -32,6 +32,10 @@ _Avoid_: medical recommendation, diagnosis-based advice
 The user-facing action proposed by a nudge decision, such as eating as planned, setting aside a portion, or reviewing a low-confidence scan.
 _Avoid_: nutrient prescription, medical instruction
 
+**Clear Portion Action**:
+A low-risk portion adjustment that can be explained from scan results without requiring exact calorie precision.
+_Avoid_: exact diet prescription, calorie target
+
 **Estimated Prevented Energy**:
 Approximate energy the user may avoid if they follow a nudge action.
 _Avoid_: exact calories saved, clinical outcome
@@ -39,6 +43,10 @@ _Avoid_: exact calories saved, clinical outcome
 **Review Food Nudge**:
 A nudge action used when inference confidence is too low and the user should review or retry the food result.
 _Avoid_: failed scan, model error
+
+**Food Review**:
+A user correction step for confirming or adjusting detected food items and coarse portions after a scan.
+_Avoid_: manual calorie entry, model retraining
 
 **Scan Image**:
 The short-lived image bytes submitted for a scan and forwarded to AI/ML Inference without default long-term storage.
@@ -81,8 +89,10 @@ _Avoid_: food category, eating schedule
 - A **Nudge Decision** may be a **Generic Nudge Decision** when no **User Profile** exists
 - A **Nudge Decision** may be a **Personalized Nudge Decision** when a **User Profile** exists
 - A **Nudge Decision** has one **Nudge Action**
+- A **Nudge Decision** should prefer a **Clear Portion Action** when scan results support one
 - A **Nudge Decision** may include **Estimated Prevented Energy**
 - A **Review Food Nudge** is a valid **Nudge Decision** outcome for low-confidence inference
+- A **Food Review** may refine the food items or portions used by a **Nudge Decision**
 - A **Scan** starts from one **Scan Image**
 - A **Weekly Energy Trend** is calculated from completed **Scans**
 - An **Anonymous User** can own many **Scans**
@@ -120,3 +130,5 @@ _Avoid_: food category, eating schedule
 - "Scan response mode" was ambiguous — resolved: the 50% backend target uses **Sync-First Scan** so mobile can get immediate feedback when inference is fast and poll when it is not.
 - "Low-confidence scan" was considered as a failure — resolved: low confidence completes the **Scan Lifecycle** with a **Review Food Nudge**; failed scans are reserved for technical failures.
 - "Uploaded food image" was considered as persisted product data — resolved: the canonical term is **Scan Image**, and backend forwards it to AI/ML Inference without default long-term storage.
+- "portion estimate" was considered final model output — resolved: users can complete a **Food Review** to confirm or adjust coarse portions before feedback is treated as clear.
+- "clear advice" was vague — resolved: backend should give a direct nudge only when scan results support a **Clear Portion Action**; ambiguous estimates should lead to **Food Review**.
