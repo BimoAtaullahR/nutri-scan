@@ -11,6 +11,15 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
+Windows PowerShell:
+
+```powershell
+cd services/ai-inference
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+```
+
 ## Dataset Prep
 
 Keep raw and processed datasets local. Do not commit `data/raw/` or `data/processed/`.
@@ -32,6 +41,9 @@ data/processed/
   test/<food_category>/
 ```
 
+The training script also accepts legacy `val/<food_category>/` as a fallback when
+`validation/<food_category>/` is not present.
+
 Issue #5 still requires manual curation before metrics should be trusted.
 
 ## Training
@@ -46,8 +58,11 @@ Artifacts are written to `model-artifacts/baseline-food-classifier/`:
 
 - `model.pt`
 - `label_map.json`
+- `training_config_resolved.json`
 
 Do not commit model artifacts.
+
+The script selects CUDA automatically when available and falls back to CPU.
 
 ## Evaluation
 
@@ -59,7 +74,9 @@ python scripts/evaluate_model.py \
 
 Reports are written to:
 
+- `reports/baseline-food-classifier/predictions.json`
 - `reports/baseline-food-classifier/metrics.json`
+- `reports/baseline-food-classifier/per_class_metrics.json`
 - `reports/baseline-food-classifier/confusion_matrix.json`
 
 MVP target:
@@ -68,6 +85,32 @@ MVP target:
 - top-3 accuracy >= 90%
 
 Current metrics are not available until the curated dataset and trained baseline artifact exist.
+
+## Export Misclassified Images
+
+After evaluation, export misclassified test images for manual review:
+
+```cmd
+python scripts\export_misclassified.py --predictions-file reports\baseline-food-classifier\predictions.json --output-dir reports\baseline-food-classifier\misclassified
+```
+
+The script copies misclassified images into folders grouped by
+`<true_label>_as_<predicted_label>` so the team can inspect weak classes and decide whether
+to clean the dataset or tune the model.
+
+## Single Image Prediction
+
+```bash
+python scripts/predict_image.py \
+  --model-path model-artifacts/baseline-food-classifier/model.pt \
+  --image-path /path/to/food.jpg
+```
+
+Windows one-line command:
+
+```cmd
+python scripts/predict_image.py --model-path model-artifacts/baseline-food-classifier/model.pt --image-path C:\path\to\food.jpg
+```
 
 ## Serving
 
