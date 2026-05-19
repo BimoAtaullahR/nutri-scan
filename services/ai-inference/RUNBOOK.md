@@ -86,6 +86,18 @@ MVP target:
 
 Current metrics are not available until the curated dataset and trained baseline artifact exist.
 
+## Export Misclassified Images
+
+After evaluation, export misclassified test images for manual review:
+
+```cmd
+python scripts\export_misclassified.py --predictions-file reports\baseline-food-classifier\predictions.json --output-dir reports\baseline-food-classifier\misclassified
+```
+
+The script copies misclassified images into folders grouped by
+`<true_label>_as_<predicted_label>` so the team can inspect weak classes and decide whether
+to clean the dataset or tune the model.
+
 ## Single Image Prediction
 
 ```bash
