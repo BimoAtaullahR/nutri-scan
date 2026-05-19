@@ -16,6 +16,22 @@ _Avoid_: AI status, upload status
 A scan workflow that tries to return completed feedback within the request window, while preserving scan lifecycle polling when inference is slow or fails.
 _Avoid_: blocking-only scan, background-only scan
 
+**Per-Food Scan Result**:
+A scan result that contains multiple detected food items and item-level estimated energy ranges.
+_Avoid_: separate scan per lauk, ingredient report
+
+**Canonical Food Item**:
+A food item confirmed or corrected enough for Backend API to use as stable user-facing scan data.
+_Avoid_: raw model candidate, ingredient
+
+**Effective Scan Result**:
+The scan result currently used for user-facing feedback, summaries, trends, and nudge decisions.
+_Avoid_: raw inference payload, model-only result
+
+**Legacy Scan Result**:
+A scan result shaped around one primary food category and one total estimated energy range.
+_Avoid_: failed old result, deprecated scan
+
 **Nudge Decision**:
 The backend-owned recommendation shown to the user after a **Scan**, based on inference results and product rules.
 _Avoid_: AI recommendation, model advice
@@ -36,6 +52,14 @@ _Avoid_: nutrient prescription, medical instruction
 A low-risk portion adjustment that can be explained from scan results without requiring exact calorie precision.
 _Avoid_: exact diet prescription, calorie target
 
+**Target Food Item**:
+The food item selected as the focus of a clear portion action.
+_Avoid_: whole scan target, hidden ingredient target
+
+**Food Action Policy**:
+Backend-owned product rules that decide how a recognized food category and coarse portion can support a nudge action.
+_Avoid_: model advice, mobile display rule
+
 **Estimated Prevented Energy**:
 Approximate energy the user may avoid if they follow a nudge action.
 _Avoid_: exact calories saved, clinical outcome
@@ -47,6 +71,22 @@ _Avoid_: failed scan, model error
 **Food Review**:
 A user correction step for confirming or adjusting detected food items and coarse portions after a scan.
 _Avoid_: manual calorie entry, model retraining
+
+**Portion Correction**:
+An MVP user correction that changes the coarse portion used by the effective scan result.
+_Avoid_: full food review, calorie entry
+
+**Food Confirmation**:
+An MVP user step for choosing the effective food category when local recognition is low confidence or conflicts with fallback candidates.
+_Avoid_: automatic external override, full food review
+
+**Result Correction**:
+An MVP user correction that updates the effective food category, coarse portion, or both for a scan.
+_Avoid_: raw inference edit, nudge response
+
+**Nudge Response**:
+The user's response to a nudge decision after reviewing scan feedback.
+_Avoid_: food correction, portion correction
 
 **Scan Image**:
 The short-lived image bytes submitted for a scan and forwarded to AI/ML Inference without default long-term storage.
@@ -84,15 +124,28 @@ _Avoid_: food category, eating schedule
 
 - A **Scan** has exactly one **Scan Lifecycle**
 - A **Sync-First Scan** starts as processing and may complete inside the create request
+- A **Scan** may have one **Per-Food Scan Result**
+- A **Per-Food Scan Result** may later produce one or more **Canonical Food Items**
+- A **Scan** may fall back to a **Legacy Scan Result** while inference evolves
+- A **Food Review** may update the **Effective Scan Result**
+- A **Portion Correction** may update the **Effective Scan Result**
+- A **Food Confirmation** may update the **Effective Scan Result**
+- A **Result Correction** may update the **Effective Scan Result**
 - A **Scan** may produce one **Nudge Decision**
 - A **Nudge Decision** is based on inference results from AI/ML Inference
 - A **Nudge Decision** may be a **Generic Nudge Decision** when no **User Profile** exists
 - A **Nudge Decision** may be a **Personalized Nudge Decision** when a **User Profile** exists
 - A **Nudge Decision** has one **Nudge Action**
 - A **Nudge Decision** should prefer a **Clear Portion Action** when scan results support one
+- A **Clear Portion Action** may name one **Target Food Item**
+- A **Nudge Decision** may use a **Food Action Policy**
 - A **Nudge Decision** may include **Estimated Prevented Energy**
 - A **Review Food Nudge** is a valid **Nudge Decision** outcome for low-confidence inference
 - A **Food Review** may refine the food items or portions used by a **Nudge Decision**
+- A **Portion Correction** may refine the portion used by a **Nudge Decision**
+- A **Food Confirmation** may refine the category used by a **Nudge Decision**
+- A **Result Correction** may refine the category or portion used by a **Nudge Decision**
+- A **Nudge Response** records whether the user followed or dismissed a **Nudge Decision**
 - A **Scan** starts from one **Scan Image**
 - A **Weekly Energy Trend** is calculated from completed **Scans**
 - An **Anonymous User** can own many **Scans**
@@ -132,3 +185,13 @@ _Avoid_: food category, eating schedule
 - "Uploaded food image" was considered as persisted product data — resolved: the canonical term is **Scan Image**, and backend forwards it to AI/ML Inference without default long-term storage.
 - "portion estimate" was considered final model output — resolved: users can complete a **Food Review** to confirm or adjust coarse portions before feedback is treated as clear.
 - "clear advice" was vague — resolved: backend should give a direct nudge only when scan results support a **Clear Portion Action**; ambiguous estimates should lead to **Food Review**.
+- "scan per lauk" was considered as a separate workflow — resolved: per-food detection evolves the existing **Scan** through a **Per-Food Scan Result**.
+- "per-food contract" was considered as a hard replacement — resolved: backend should support **Per-Food Scan Result** while preserving **Legacy Scan Result** fallback.
+- "store every detected item as a row immediately" was premature — resolved: raw per-food inference may stay in the scan payload first, while **Canonical Food Items** can be normalized after review workflows mature.
+- "food review" was considered as a nudge response — resolved: **Food Review** corrects scan food data, while **Nudge Response** records the user's response to advice.
+- "scan result" was ambiguous between raw model output and corrected output — resolved: **Effective Scan Result** is what Backend API uses for feedback, summaries, trends, and nudges.
+- "portion nudge" was too generic for per-food results — resolved: a **Clear Portion Action** should target a **Target Food Item** when scan evidence supports it.
+- "Food Review" was broader than the shortened MVP needs — resolved: MVP uses **Portion Correction** for small/medium/large updates, while full **Food Review** remains future scope.
+- "reducible item" was ambiguous between model output and product rule — resolved: Backend API owns **Food Action Policy** for nudge behavior.
+- "Gemini vs local result" was ambiguous — resolved: low-confidence conflicts use **Food Confirmation**, not automatic external override.
+- "separate correction endpoints" would add MVP surface area — resolved: Backend API exposes **Result Correction** as the combined correction concept for category and portion.
