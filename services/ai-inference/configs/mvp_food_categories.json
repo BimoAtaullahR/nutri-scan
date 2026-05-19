@@ -1,5 +1,15 @@
 {
   "version": "0.1.0",
+  "classes": [
+    "bakso",
+    "gado_gado",
+    "gudeg",
+    "nasi_goreng",
+    "pempek",
+    "rendang",
+    "sate",
+    "soto"
+  ],
   "categories": [
     {
       "slug": "nasi_goreng",
