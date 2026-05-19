@@ -1,7 +1,11 @@
-# Dataset Collaboration with ZIP
+# Dataset Collaboration with Shared Drop Folder
 
 This document explains how NutriScan teammates can share the curated MVP food
 dataset without committing image files to Git.
+
+The team uses a shared cloud folder as a **Dataset Drop Folder**. It stores
+versioned dataset archives, selected model artifacts, and evaluation reports.
+It is not a shared working directory for training.
 
 ## Rule
 
@@ -22,7 +26,42 @@ Keep these local or shared outside Git:
 - `reports/`
 - `model-artifacts/`
 
+## Shared Folder Layout
+
+Use a shared folder such as Google Drive, OneDrive, or another team-owned
+storage location:
+
+```txt
+NutriScan AI Shared/
+  datasets/
+    nutriscan-mvp-food-dataset-v0.1-2026-05-15.zip
+  model-artifacts/
+    baseline-efficientnet-b0-v1.zip
+  reports/
+    baseline-efficientnet-b0-v1/
+      metrics.json
+      confusion_matrix.json
+  notes/
+    dataset-change-log.md
+    experiment-log.md
+```
+
+Rules:
+
+- `datasets/` stores official versioned dataset ZIP files.
+- `model-artifacts/` stores model artifacts selected for team sharing.
+- `reports/` stores evaluation outputs for shared model runs.
+- `notes/` stores dataset and experiment notes.
+- Do not train directly from the shared folder.
+- Do not edit dataset files in place inside the shared folder.
+
 ## Current Dataset Version
+
+The active dataset version is recorded in:
+
+```txt
+services/ai-inference/DATASET_VERSION.md
+```
 
 Use this version name for the current curated MVP dataset:
 
@@ -141,9 +180,56 @@ python scripts/train_classifier.py \
   --processed-dir data/processed
 ```
 
+## Sharing Model Artifacts
+
+Do not upload every local experiment to the shared folder. Share only selected
+model artifacts that the team may use for backend, mobile, or demo testing.
+
+Rules:
+
+- Put shared model artifacts in `model-artifacts/`.
+- Put the matching evaluation report in `reports/<model-version>/`.
+- Keep local experiments on the local machine unless the team decides to share them.
+- Do not replace a shared model artifact in place; publish a new version instead.
+
+Example:
+
+```txt
+NutriScan AI Shared/
+  model-artifacts/
+    baseline-efficientnet-b0-v1.zip
+  reports/
+    baseline-efficientnet-b0-v1/
+      metrics.json
+      confusion_matrix.json
+```
+
+## Progress Tracking
+
+Track shared model-development progress in GitHub Issues and PRs. Chat is fine
+for coordination, but decisions and completed work should land in the repo.
+
+Suggested issue slices:
+
+- dataset cleanup
+- dataset audit
+- baseline training
+- evaluation report
+- confidence threshold calibration
+- external vision fallback
+- backend integration
+- mobile result correction flow
+
+Every PR that changes model behavior, dataset metadata, or evaluation results
+should mention the dataset version and model artifact version it used.
+
 ## Updating the Dataset
 
 When someone changes the dataset, create a new version. Do not overwrite the old ZIP.
+
+Only the Dataset Owner publishes official dataset ZIP files to `datasets/`.
+Other teammates may propose changes, clean data locally, or share candidate
+changes, but the official version is the ZIP published by the Dataset Owner.
 
 Version examples:
 
@@ -158,6 +244,16 @@ Each version update must include:
 - updated `data/manifests/mvp_food_dataset.md`
 - audit command output checked locally
 - short note in the PR describing what changed
+
+Suggested owner flow:
+
+1. Review the proposed dataset change.
+2. Apply accepted changes locally.
+3. Run the dataset audit.
+4. Update the manifest counts and dataset change log.
+5. Create a new ZIP version.
+6. Upload the ZIP to `datasets/`.
+7. Keep older ZIP versions available until the team agrees they are obsolete.
 
 ## What to Check Before Sharing
 

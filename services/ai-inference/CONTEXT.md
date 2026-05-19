@@ -56,6 +56,14 @@ _Avoid_: failed inference, always-on external scan
 A record of dataset sources, licenses, class coverage, and train/validation/test counts used for model development.
 _Avoid_: loose dataset notes
 
+**Dataset Drop Folder**:
+A shared storage location for versioned dataset archives and model artifacts, not a place for direct training work.
+_Avoid_: shared working dataset, Git-tracked dataset
+
+**Dataset Owner**:
+The teammate responsible for publishing official dataset versions to the dataset drop folder.
+_Avoid_: sole model owner, Git approver
+
 **Portion Ground Truth Subset**:
 A smaller evaluation set with measured portion or weight information for checking energy estimate quality.
 _Avoid_: required label for every dataset image, full nutrition dataset
@@ -128,6 +136,8 @@ _Avoid_: calorie payload, nudge payload, segmentation result
 - A **User-Corrected Portion** may replace a **Coarse Portion Estimate** for product feedback
 - A **Portion Ground Truth Subset** is used to evaluate **Per-Food Estimated Energy** quality
 - **Unknown Food** is returned when the **Confidence Score** is below the MVP threshold
+- A **Dataset Drop Folder** distributes dataset versions while local machines run training work
+- A **Dataset Owner** publishes official dataset versions to the **Dataset Drop Folder**
 
 ## MVP Food Categories
 
@@ -167,6 +177,8 @@ _Avoid_: calorie payload, nudge payload, segmentation result
 - "add chicken categories" would improve Indonesian food coverage but expands dataset work — resolved: MVP uses the eight locally curated food categories, while ayam goreng and ayam bakar are future categories.
 - "small/medium/large from AI" was too strong for available evidence — resolved: MVP starts with a **Default Coarse Portion** and lets the user correct it.
 - "AI contract" was too broad for the shortened MVP — resolved: MVP uses a **Recognizer Payload** and Backend API adds portion, energy range, and nudge decisions.
+- "shared dataset folder" was ambiguous between a working directory and an archive exchange — resolved: the team uses a **Dataset Drop Folder** for versioned archives, not direct training work.
+- "who updates the dataset" was ambiguous — resolved: teammates may propose changes, but a **Dataset Owner** publishes official dataset versions.
 
 ## Future Research
 
