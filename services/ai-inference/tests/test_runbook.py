@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -21,4 +20,5 @@ def test_runbook_documents_full_demo_path() -> None:
     assert "model-artifacts/baseline-food-classifier/" in runbook
     assert "reports/baseline-food-classifier/metrics.json" in runbook
     assert "curl -X POST" in runbook
-    assert "Current metrics are not available" in runbook
+    assert "MODEL_COMPARISON.md" in runbook
+    assert "configs/selected_mvp_classifier.json" in runbook

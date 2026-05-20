@@ -3,7 +3,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -18,8 +17,25 @@ def test_training_config_records_model_and_labels() -> None:
     assert config["image_size"] > 0
     assert config["batch_size"] > 0
     assert config["epochs"] > 0
+<<<<<<< Updated upstream
     assert resolved.class_names == class_map["classes"]
     assert config["output_dir"] == "model-artifacts/baseline-food-classifier"
+=======
+    assert config["labels"] == class_map["classes"]
+    assert config["artifactDir"] == "model-artifacts/baseline-food-classifier"
+>>>>>>> Stashed changes
+
+
+def test_selected_mvp_config_records_current_best_model() -> None:
+    config = json.loads((ROOT / "configs" / "selected_mvp_classifier.json").read_text())
+
+    assert config["model_name"] == "convnext_tiny.fb_in1k"
+    assert config["image_size"] == 256
+    assert config["learning_rate"] == 0.0001
+    assert config["weight_decay"] == 0.0005
+    assert config["label_smoothing"] == 0.1
+    assert config["output_dir"] == "model-artifacts/selected-mvp-classifier"
+    assert config["report_dir"] == "reports/selected-mvp-classifier"
 
 
 def test_training_script_dry_run_validates_config() -> None:
@@ -44,13 +60,21 @@ def test_training_script_dry_run_validates_config() -> None:
     assert "artifactDir=model-artifacts/baseline-food-classifier" in result.stdout
 
 
+<<<<<<< Updated upstream
 def test_training_script_dry_run_reports_label_smoothing() -> None:
+=======
+def test_selected_mvp_training_script_dry_run_validates_config() -> None:
+>>>>>>> Stashed changes
     result = subprocess.run(
         [
             sys.executable,
             "scripts/train_classifier.py",
             "--config",
+<<<<<<< Updated upstream
             "configs/baseline_training_v2.json",
+=======
+            "configs/selected_mvp_classifier.json",
+>>>>>>> Stashed changes
             "--processed-dir",
             "data/processed-v0.2",
             "--dry-run",
@@ -61,6 +85,7 @@ def test_training_script_dry_run_reports_label_smoothing() -> None:
         text=True,
     )
 
+<<<<<<< Updated upstream
     assert "model=efficientnet_b0" in result.stdout
     assert "labelSmoothing=0.1" in result.stdout
     assert "cropScale=0.75-1" in result.stdout
@@ -90,3 +115,9 @@ def test_training_config_uses_default_augmentation_settings() -> None:
     assert config.color_jitter_contrast == 0.15
     assert config.color_jitter_saturation == 0.10
     assert config.random_erasing_p == 0.0
+=======
+    assert "model=convnext_tiny.fb_in1k" in result.stdout
+    assert "imageSize=256" in result.stdout
+    assert "labelSmoothing=0.1" in result.stdout
+    assert "artifactDir=model-artifacts/selected-mvp-classifier" in result.stdout
+>>>>>>> Stashed changes

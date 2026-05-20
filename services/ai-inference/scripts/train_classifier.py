@@ -110,20 +110,6 @@ def load_config(path: Path) -> TrainingConfig:
             seed=int(raw.get("seed", 42)),
             use_amp=bool(raw.get("useAmp", True)),
             num_workers=int(raw.get("numWorkers", 0)),
-            label_smoothing=float(raw.get("labelSmoothing", raw.get("label_smoothing", 0.0))),
-            random_resized_crop_scale=load_crop_scale(raw),
-            horizontal_flip_p=float(raw.get("horizontalFlipP", raw.get("horizontal_flip_p", 0.5))),
-            rotation_degrees=float(raw.get("rotationDegrees", raw.get("rotation_degrees", 10))),
-            color_jitter_brightness=float(
-                raw.get("colorJitterBrightness", raw.get("color_jitter_brightness", 0.15))
-            ),
-            color_jitter_contrast=float(
-                raw.get("colorJitterContrast", raw.get("color_jitter_contrast", 0.15))
-            ),
-            color_jitter_saturation=float(
-                raw.get("colorJitterSaturation", raw.get("color_jitter_saturation", 0.10))
-            ),
-            random_erasing_p=float(raw.get("randomErasingP", raw.get("random_erasing_p", 0.0))),
             output_dir=output_dir,
             report_dir=Path(raw.get("reportDir", "reports/baseline-food-classifier")),
         )
@@ -152,14 +138,6 @@ def load_config(path: Path) -> TrainingConfig:
         seed=int(raw.get("seed", 42)),
         use_amp=bool(raw.get("use_amp", True)),
         num_workers=int(raw.get("num_workers", 0)),
-        label_smoothing=float(raw.get("label_smoothing", 0.0)),
-        random_resized_crop_scale=load_crop_scale(raw),
-        horizontal_flip_p=float(raw.get("horizontal_flip_p", 0.5)),
-        rotation_degrees=float(raw.get("rotation_degrees", 10)),
-        color_jitter_brightness=float(raw.get("color_jitter_brightness", 0.15)),
-        color_jitter_contrast=float(raw.get("color_jitter_contrast", 0.15)),
-        color_jitter_saturation=float(raw.get("color_jitter_saturation", 0.10)),
-        random_erasing_p=float(raw.get("random_erasing_p", 0.0)),
         output_dir=Path(raw["output_dir"]),
         report_dir=Path(raw["report_dir"]),
     )
@@ -224,22 +202,16 @@ def validate_processed_dataset(processed_dir: Path, class_names: list[str]) -> d
 def build_transforms(config: TrainingConfig):
     from torchvision import transforms
 
-    train_steps = [
-        transforms.RandomResizedCrop(config.image_size, scale=config.random_resized_crop_scale),
-        transforms.RandomHorizontalFlip(p=config.horizontal_flip_p),
-        transforms.RandomRotation(degrees=config.rotation_degrees),
-        transforms.ColorJitter(
-            brightness=config.color_jitter_brightness,
-            contrast=config.color_jitter_contrast,
-            saturation=config.color_jitter_saturation,
-        ),
-        transforms.ToTensor(),
-        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-    ]
-    if config.random_erasing_p > 0:
-        train_steps.append(transforms.RandomErasing(p=config.random_erasing_p))
-
-    train_transform = transforms.Compose(train_steps)
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomResizedCrop(image_size, scale=(0.75, 1.0)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(degrees=10),
+            transforms.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.10),
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+        ]
+    )
     eval_transform = transforms.Compose(
         [
             transforms.Resize(int(config.image_size * 1.15)),
@@ -541,7 +513,7 @@ def train_classifier(config: TrainingConfig, processed_dir: Path) -> None:
     model = create_model(config).to(device)
     optimizer = create_optimizer(config, model)
     scheduler = create_scheduler(config, optimizer)
-    criterion = create_criterion(config)
+    criterion = nn.CrossEntropyLoss()
     scaler = create_grad_scaler(use_amp)
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
@@ -626,12 +598,7 @@ def main() -> None:
         print(
             f"model={config.model_name} classes={len(config.class_names)} "
             f"imageSize={config.image_size} batchSize={config.batch_size} "
-            f"epochs={config.epochs} labelSmoothing={config.label_smoothing:g} "
-            f"cropScale={config.random_resized_crop_scale[0]:g}-{config.random_resized_crop_scale[1]:g} "
-            f"rotation={config.rotation_degrees:g} "
-            f"colorJitter={config.color_jitter_brightness:g}/{config.color_jitter_contrast:g}/{config.color_jitter_saturation:g} "
-            f"randomErasing={config.random_erasing_p:g} "
-            f"artifactDir={config.output_dir.as_posix()} "
+            f"epochs={config.epochs} artifactDir={config.output_dir.as_posix()} "
             f"reportDir={config.report_dir.as_posix()}"
         )
         return
