@@ -1,0 +1,20 @@
+{
+  "model_name": "convnext_tiny.fb_in1k",
+  "pretrained": true,
+  "num_classes": 8,
+  "class_config": "configs/mvp_food_categories.json",
+  "image_size": 256,
+  "batch_size": 8,
+  "epochs": 20,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.0005,
+  "optimizer": "adamw",
+  "scheduler": "cosine",
+  "early_stopping_patience": 6,
+  "seed": 42,
+  "use_amp": true,
+  "num_workers": 0,
+  "label_smoothing": 0.1,
+  "output_dir": "model-artifacts/selected-mvp-classifier",
+  "report_dir": "reports/selected-mvp-classifier"
+}
