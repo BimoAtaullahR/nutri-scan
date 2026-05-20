@@ -254,10 +254,8 @@ if torch.cuda.is_available():
 
 ```bash
 cd /content/nutri-scan/services/ai-inference
-pip install -q timm scikit-learn pydantic-settings python-multipart "uvicorn[standard]" ruff
-pip install -q -e . --no-deps
-
-python scripts/train_classifier.py \
-  --config configs/baseline_training_v2.json \
-  --processed-dir data/processed-v0.2
+REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 ```
+
+The helper trains `configs/baseline_training_v2.json`, evaluates the generated
+predictions, exports misclassified images, and prints a short weak-class summary.

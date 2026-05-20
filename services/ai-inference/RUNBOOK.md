@@ -99,14 +99,12 @@ Minimal Colab command sequence:
 
 ```bash
 cd /content/nutri-scan/services/ai-inference
-pip install -q timm scikit-learn pydantic-settings python-multipart "uvicorn[standard]" ruff
-pip install -q -e . --no-deps
-
-python scripts/train_classifier.py \
-  --config configs/baseline_training_v2.json \
-  --processed-dir data/processed-v0.2
+REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 ```
-The script selects CUDA automatically when available and falls back to CPU.
+
+The helper installs training dependencies, fails fast when CUDA is unavailable,
+trains with `configs/baseline_training_v2.json`, evaluates predictions, exports
+misclassified images, and prints top-1, top-3, and weak-class metrics.
 
 ## Evaluation
 
