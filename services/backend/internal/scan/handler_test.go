@@ -299,6 +299,44 @@ func TestCreateScanMarksInvalidInferencePayloadFailed(t *testing.T) {
 	}
 }
 
+func TestCreateScanMarksInvalidInferencePayloadMissingModelVersion(t *testing.T) {
+	anonymousUser := user.AnonymousUser{ID: "9fd2e4f6-a1ab-432a-86bc-30a743a6f74b"}
+	store := newFakeStore()
+	aiClient := &fakeInferenceClient{
+		result: InferenceResult{
+			ModelVersion: "",
+			FoodCategory: FoodCategoryConfidence{
+				Slug:            "nasi_goreng",
+				ConfidenceScore: 0.87,
+			},
+			CoarsePortion:       "medium",
+			ConfidenceThreshold: 0.6,
+		},
+	}
+	router := newAuthenticatedScanRouter(t, store, aiClient, anonymousUser)
+
+	req := newMultipartScanRequest(t, "/scans", "snack", []byte("not-empty"), "image/png")
+	req.Header.Set("Authorization", "Bearer token")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusCreated, rec.Code, rec.Body.String())
+	}
+
+	var response scanResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.Status != ScanStatusFailed {
+		t.Fatalf("expected failed status, got %q", response.Status)
+	}
+	if response.FailureReason == nil || *response.FailureReason != "invalid_inference_payload" {
+		t.Fatalf("expected invalid_inference_payload reason, got %#v", response.FailureReason)
+	}
+}
+
 func TestCreateScanAssignsFallbackMealType(t *testing.T) {
 	anonymousUser := user.AnonymousUser{ID: "9fd2e4f6-a1ab-432a-86bc-30a743a6f74b"}
 	store := newFakeStore()
