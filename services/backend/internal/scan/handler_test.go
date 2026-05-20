@@ -79,7 +79,13 @@ func TestCreateScanProducesReviewFoodNudgeForLowConfidenceInference(t *testing.T
 	store := newFakeStore()
 	result := validInferenceResult()
 	result.IsLowConfidence = true
+	result.FoodCategory.Slug = "unknown_food"
 	result.FoodCategory.ConfidenceScore = 0.42
+	result.Alternatives = []FoodCategoryConfidence{
+		{Slug: "sate", ConfidenceScore: 0.42},
+		{Slug: "rendang", ConfidenceScore: 0.31},
+	}
+	result.EstimatedEnergyRange = nil
 	aiClient := &fakeInferenceClient{result: result}
 	router := newAuthenticatedScanRouter(t, store, aiClient, anonymousUser)
 
@@ -99,6 +105,18 @@ func TestCreateScanProducesReviewFoodNudgeForLowConfidenceInference(t *testing.T
 	}
 	if response.Status != ScanStatusCompleted {
 		t.Fatalf("expected low-confidence Scan to complete, got %q", response.Status)
+	}
+	if response.FailureReason != nil {
+		t.Fatalf("expected low-confidence Scan not to fail, got %q", *response.FailureReason)
+	}
+	if response.EstimatedEnergyKcal != nil {
+		t.Fatalf("expected low-confidence Scan not to estimate energy, got %d", *response.EstimatedEnergyKcal)
+	}
+	if response.Inference == nil || response.Inference.FoodCategory != "unknown_food" {
+		t.Fatalf("expected Unknown Food inference summary, got %#v", response.Inference)
+	}
+	if len(response.Inference.Alternatives) != 2 {
+		t.Fatalf("expected review alternatives, got %#v", response.Inference.Alternatives)
 	}
 	if response.NudgeDecision == nil {
 		t.Fatal("expected Review Food Nudge")
