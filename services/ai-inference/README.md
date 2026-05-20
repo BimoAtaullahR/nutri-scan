@@ -241,6 +241,20 @@ configs/convnext_tiny_tune_img256.json
 configs/convnext_tiny_tune_lr5e5_img256.json
 ```
 
+Selected MVP classifier config:
+
+```txt
+configs/selected_mvp_classifier.json
+```
+
+The selected config uses `convnext_tiny.fb_in1k`, `image_size=256`,
+`learning_rate=0.0001`, and active `label_smoothing=0.1`. It was selected from
+the ConvNeXt-Tiny tuning screen because it had the highest top-1 accuracy,
+highest top-3 accuracy, and lowest total misclassified count in the tuning batch.
+Before running additional tuning, follow the further tuning guardrails in
+`MODEL_COMPARISON.md`: review selected-model errors, define the next objective,
+and avoid repeatedly selecting models from the same held-out test set.
+
 Run a comparison config through the Colab helper by overriding `CONFIG`:
 
 ```bash

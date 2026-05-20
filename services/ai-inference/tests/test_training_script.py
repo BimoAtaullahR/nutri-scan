@@ -63,6 +63,10 @@ def test_training_script_dry_run_reports_label_smoothing() -> None:
 
     assert "model=efficientnet_b0" in result.stdout
     assert "labelSmoothing=0.1" in result.stdout
+    assert "cropScale=0.75-1" in result.stdout
+    assert "rotation=10" in result.stdout
+    assert "colorJitter=0.15/0.15/0.1" in result.stdout
+    assert "randomErasing=0" in result.stdout
 
 
 def test_training_criterion_uses_configured_label_smoothing() -> None:
@@ -72,3 +76,17 @@ def test_training_criterion_uses_configured_label_smoothing() -> None:
     criterion = create_criterion(config)
 
     assert criterion.label_smoothing == 0.1
+
+
+def test_training_config_uses_default_augmentation_settings() -> None:
+    from scripts.train_classifier import load_config
+
+    config = load_config(ROOT / "configs" / "selected_mvp_classifier.json")
+
+    assert config.random_resized_crop_scale == (0.75, 1.0)
+    assert config.horizontal_flip_p == 0.5
+    assert config.rotation_degrees == 10
+    assert config.color_jitter_brightness == 0.15
+    assert config.color_jitter_contrast == 0.15
+    assert config.color_jitter_saturation == 0.10
+    assert config.random_erasing_p == 0.0

@@ -197,8 +197,8 @@ _Avoid_: calorie payload, nudge payload, segmentation result
 - Use FastAPI for the inference HTTP service.
 - Use PyTorch and timm for classifier training and inference.
 - Prefer lightweight pretrained baselines such as EfficientNet-B0 or MobileNetV3.
-- Treat ConvNeXt-Tiny as the selected MVP classifier candidate after the model
-  comparison screen, pending tuning and runtime validation.
+- Use ConvNeXt-Tiny as the selected MVP classifier after the model comparison
+  and tuning screens, pending runtime artifact wiring and serving validation.
 - Use `nutriscan-mvp-food-dataset-v0.2` / `data/processed-v0.2` as the active
   reviewed dataset for EfficientNet-B0 baseline v2 retraining.
 - Apply misclassified review decisions through `scripts/apply_misclassified_review.py`;

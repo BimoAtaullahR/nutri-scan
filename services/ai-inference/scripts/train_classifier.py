@@ -33,6 +33,13 @@ class TrainingConfig:
     use_amp: bool
     num_workers: int
     label_smoothing: float
+    random_resized_crop_scale: tuple[float, float]
+    horizontal_flip_p: float
+    rotation_degrees: float
+    color_jitter_brightness: float
+    color_jitter_contrast: float
+    color_jitter_saturation: float
+    random_erasing_p: float
     output_dir: Path
     report_dir: Path
 
@@ -68,6 +75,18 @@ def load_class_names(class_config_path: Path) -> list[str]:
     return class_names
 
 
+def load_crop_scale(raw: dict[str, Any]) -> tuple[float, float]:
+    value = raw.get("random_resized_crop_scale", raw.get("randomResizedCropScale", [0.75, 1.0]))
+    if not isinstance(value, list | tuple) or len(value) != 2:
+        raise ValueError("random_resized_crop_scale must contain two numeric values")
+
+    minimum = float(value[0])
+    maximum = float(value[1])
+    if minimum <= 0 or maximum <= 0 or minimum > maximum or maximum > 1.0:
+        raise ValueError("random_resized_crop_scale must satisfy 0 < min <= max <= 1")
+    return minimum, maximum
+
+
 def load_config(path: Path) -> TrainingConfig:
     raw = load_json(path)
 
@@ -92,6 +111,19 @@ def load_config(path: Path) -> TrainingConfig:
             use_amp=bool(raw.get("useAmp", True)),
             num_workers=int(raw.get("numWorkers", 0)),
             label_smoothing=float(raw.get("labelSmoothing", raw.get("label_smoothing", 0.0))),
+            random_resized_crop_scale=load_crop_scale(raw),
+            horizontal_flip_p=float(raw.get("horizontalFlipP", raw.get("horizontal_flip_p", 0.5))),
+            rotation_degrees=float(raw.get("rotationDegrees", raw.get("rotation_degrees", 10))),
+            color_jitter_brightness=float(
+                raw.get("colorJitterBrightness", raw.get("color_jitter_brightness", 0.15))
+            ),
+            color_jitter_contrast=float(
+                raw.get("colorJitterContrast", raw.get("color_jitter_contrast", 0.15))
+            ),
+            color_jitter_saturation=float(
+                raw.get("colorJitterSaturation", raw.get("color_jitter_saturation", 0.10))
+            ),
+            random_erasing_p=float(raw.get("randomErasingP", raw.get("random_erasing_p", 0.0))),
             output_dir=output_dir,
             report_dir=Path(raw.get("reportDir", "reports/baseline-food-classifier")),
         )
@@ -121,6 +153,13 @@ def load_config(path: Path) -> TrainingConfig:
         use_amp=bool(raw.get("use_amp", True)),
         num_workers=int(raw.get("num_workers", 0)),
         label_smoothing=float(raw.get("label_smoothing", 0.0)),
+        random_resized_crop_scale=load_crop_scale(raw),
+        horizontal_flip_p=float(raw.get("horizontal_flip_p", 0.5)),
+        rotation_degrees=float(raw.get("rotation_degrees", 10)),
+        color_jitter_brightness=float(raw.get("color_jitter_brightness", 0.15)),
+        color_jitter_contrast=float(raw.get("color_jitter_contrast", 0.15)),
+        color_jitter_saturation=float(raw.get("color_jitter_saturation", 0.10)),
+        random_erasing_p=float(raw.get("random_erasing_p", 0.0)),
         output_dir=Path(raw["output_dir"]),
         report_dir=Path(raw["report_dir"]),
     )
@@ -182,23 +221,29 @@ def validate_processed_dataset(processed_dir: Path, class_names: list[str]) -> d
     return split_dirs
 
 
-def build_transforms(image_size: int):
+def build_transforms(config: TrainingConfig):
     from torchvision import transforms
 
-    train_transform = transforms.Compose(
-        [
-            transforms.RandomResizedCrop(image_size, scale=(0.75, 1.0)),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomRotation(degrees=10),
-            transforms.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.10),
-            transforms.ToTensor(),
-            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-        ]
-    )
+    train_steps = [
+        transforms.RandomResizedCrop(config.image_size, scale=config.random_resized_crop_scale),
+        transforms.RandomHorizontalFlip(p=config.horizontal_flip_p),
+        transforms.RandomRotation(degrees=config.rotation_degrees),
+        transforms.ColorJitter(
+            brightness=config.color_jitter_brightness,
+            contrast=config.color_jitter_contrast,
+            saturation=config.color_jitter_saturation,
+        ),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+    ]
+    if config.random_erasing_p > 0:
+        train_steps.append(transforms.RandomErasing(p=config.random_erasing_p))
+
+    train_transform = transforms.Compose(train_steps)
     eval_transform = transforms.Compose(
         [
-            transforms.Resize(int(image_size * 1.15)),
-            transforms.CenterCrop(image_size),
+            transforms.Resize(int(config.image_size * 1.15)),
+            transforms.CenterCrop(config.image_size),
             transforms.ToTensor(),
             transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
         ]
@@ -209,7 +254,7 @@ def build_transforms(image_size: int):
 def build_datasets(split_dirs: dict[str, Path], config: TrainingConfig):
     from torchvision import datasets
 
-    train_transform, eval_transform = build_transforms(config.image_size)
+    train_transform, eval_transform = build_transforms(config)
     split_transforms = {
         "train": train_transform,
         "validation": eval_transform,
@@ -582,6 +627,10 @@ def main() -> None:
             f"model={config.model_name} classes={len(config.class_names)} "
             f"imageSize={config.image_size} batchSize={config.batch_size} "
             f"epochs={config.epochs} labelSmoothing={config.label_smoothing:g} "
+            f"cropScale={config.random_resized_crop_scale[0]:g}-{config.random_resized_crop_scale[1]:g} "
+            f"rotation={config.rotation_degrees:g} "
+            f"colorJitter={config.color_jitter_brightness:g}/{config.color_jitter_contrast:g}/{config.color_jitter_saturation:g} "
+            f"randomErasing={config.random_erasing_p:g} "
             f"artifactDir={config.output_dir.as_posix()} "
             f"reportDir={config.report_dir.as_posix()}"
         )

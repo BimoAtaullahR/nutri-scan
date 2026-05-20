@@ -136,6 +136,18 @@ configs/convnext_tiny_tune_img256.json
 configs/convnext_tiny_tune_lr5e5_img256.json
 ```
 
+Selected MVP classifier config:
+
+```txt
+configs/selected_mvp_classifier.json
+```
+
+This selected config uses `convnext_tiny.fb_in1k`, `image_size=256`,
+`learning_rate=0.0001`, and active `label_smoothing=0.1`.
+Before running more tuning, follow the further tuning guardrails in
+`MODEL_COMPARISON.md`: review selected-model errors, define the next objective,
+and avoid repeatedly selecting models from the same held-out test set.
+
 Run any comparison config in Colab by overriding `CONFIG`:
 
 ```bash

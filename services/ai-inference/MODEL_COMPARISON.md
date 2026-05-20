@@ -82,9 +82,11 @@ ConvNeXt-Tiny is the strongest candidate from this architecture screen. It has
 the best top-1 accuracy, keeps top-3 accuracy above the MVP target, and improves
 all weak-class F1 values compared with the other comparison candidates.
 
-Status: ConvNeXt-Tiny is the selected MVP classifier candidate. It is not yet the
-final runtime model until tuning, artifact wiring, and runtime validation are
-complete.
+Status: ConvNeXt-Tiny was selected for MVP after the tuning screen. The fixed
+project model config is `configs/selected_mvp_classifier.json`, based on
+`convnext_tiny.fb_in1k` with `image_size=256`, `learning_rate=0.0001`, and active
+`label_smoothing=0.1`. Runtime artifact wiring and serving smoke tests remain
+separate follow-up work.
 
 Artifact sizes:
 
@@ -138,6 +140,20 @@ make label smoothing a tuning axis if the first batch gives a specific reason.
 | Tune 2 | `configs/convnext_tiny_tune_img256.json` | image size `224` -> `256` | pending |
 | Tune 3 | `configs/convnext_tiny_tune_lr5e5_img256.json` | learning rate `0.00005`, image size `256` | pending |
 
+Tuning results:
+
+| Run | Top-1 | Top-3 | Rendang F1 | Gado-gado F1 | Soto F1 | Weak-class Avg F1 | Priority Confusions | Total Misclassified | Decision |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Control rerun | 90.97% | 98.65% | 83.95% | 91.67% | 86.67% | 87.43% | 6 | 40 | baseline for tuning |
+| Tune 1: LR `0.00005` | 91.20% | 98.19% | 85.37% | 88.66% | 89.26% | 87.76% | 3 | 39 | not selected |
+| Tune 2: image size `256` | 91.87% | 98.87% | 83.33% | 88.66% | 89.26% | 87.08% | 5 | 36 | selected |
+| Tune 3: LR `0.00005`, image size `256` | 91.20% | 98.65% | 81.48% | 90.91% | 87.80% | 86.73% | 2 | 39 | not selected |
+
+Tune 2 is selected because it has the highest top-1 accuracy and top-3 accuracy,
+and the lowest total misclassified count. Its weak-class average F1 is lower
+than Tune 1 by less than one percentage point, but the selection rule prioritizes
+top-1 unless candidates are within `0.5 pp`.
+
 Select the tuned ConvNeXt-Tiny candidate using this order:
 
 1. Highest top-1 accuracy.
@@ -148,9 +164,116 @@ Select the tuned ConvNeXt-Tiny candidate using this order:
 4. If still tied, choose the cheaper config: `224` image size before `256`, and
    `learning_rate=0.0001` before `0.00005`.
 
-Do not add more tuning axes until this batch finishes. Defer weight decay,
-label-smoothing sweeps, augmentation changes, longer training, class weighting,
-and test-time augmentation until the four-run ConvNeXt-Tiny batch has results.
+## Further Tuning Guardrails
+
+Do not start another large tuning sweep directly from the selected model. The
+current held-out test set has already been used to choose the architecture and
+the first tuned ConvNeXt-Tiny config. Repeatedly selecting runs from the same
+test set risks optimizing the experiment process around that test set rather
+than improving generalization.
+
+Before another tuning batch:
+
+1. Freeze `configs/selected_mvp_classifier.json` as the current selected-model
+   checkpoint.
+2. Review the selected model's misclassified images and summarize whether errors
+   are caused by ambiguous images, label issues, bad quality, weak-class visual
+   overlap, or likely model capacity/recipe limitations.
+3. Define the next tuning objective before running experiments.
+4. Prefer validation-driven tuning and reserve the test set for final
+   confirmation of a small number of candidates.
+
+Recommended next objective:
+
+- preserve top-1 accuracy around the selected model's `91.87%`
+- improve weak-class average F1 above `87.08%`
+- reduce priority confusions, especially `soto` as `bakso`, `rendang` as
+  `nasi_goreng`, and `gado_gado` as `soto`
+- avoid selecting a model for a tiny top-1 gain if weak-class behavior gets worse
+
+Tuning axes to consider after error analysis:
+
+| Axis | Candidate Values | Notes |
+| --- | --- | --- |
+| `weight_decay` | `0.0003`, `0.0005`, `0.001` | Regularization sweep around current value |
+| `label_smoothing` | `0.0`, `0.05`, `0.1` | Now active in the trainer; compare only after deciding it is worth an axis |
+| `learning_rate` | `0.0001`, `0.000075`, `0.00005` | Use smaller changes around the selected config |
+| augmentation strength | crop scale, rotation, color jitter | Requires trainer support before config-only tuning |
+| training budget | epochs, early stopping patience | Use only if validation curves suggest undertraining |
+| weak-class handling | class weighting or weighted sampling | Requires trainer support and careful validation |
+| test-time augmentation | flip/crop averaging | Runtime trade-off, not a training improvement |
+
+Do not add all axes at once. Add one axis only when the selected model's error
+analysis gives a reason for it.
+
+## Selected Model Error Analysis
+
+Reviewed file:
+
+```txt
+reports/convnext-tiny-tune-img256/error_analysis.xlsx
+```
+
+Summary after second-pass review:
+
+| Category | Count |
+| --- | ---: |
+| Total reviewed misclassified images | 36 |
+| `model_error` | 33 |
+| `out_of_scope` | 2 |
+| `ambiguous` | 1 |
+| `keep_for_tuning_signal` | 33 |
+| `exclude_in_next_dataset` | 3 |
+
+Error type breakdown:
+
+| Error Type | Count |
+| --- | ---: |
+| `background_or_context_bias` | 14 |
+| `weak_class_overlap` | 10 |
+| `low_visual_dominance` | 6 |
+| `mixed_food` | 2 |
+| `presentation_variation` | 2 |
+| `image_quality` | 1 |
+| `label_noise` | 1 |
+
+Largest repeated confusion:
+
+- `sate` as `rendang`: 5, all `weak_class_overlap`
+- `bakso` as `soto`: 3, mostly `background_or_context_bias`
+- `gado_gado` as `soto`: 3, all `background_or_context_bias`
+- `rendang` errors are spread across several predicted classes and are often
+  `background_or_context_bias` or `low_visual_dominance`
+
+Conclusion: the selected model's remaining errors are mostly valid model errors,
+not broad dataset corruption. Only three reviewed images are candidates for
+exclusion in a future dataset version. The next improvement path should focus on
+context robustness and class-overlap handling rather than a large dataset cleanup
+or broad hyperparameter sweep.
+
+## Context Robustness Tuning Batch
+
+The next tuning batch targets `background_or_context_bias`, which is the largest
+reviewed error type for the selected model. These configs keep the selected model
+architecture and core training recipe fixed while changing only train-time
+augmentation.
+
+| Run | Config | Change | Decision |
+| --- | --- | --- | --- |
+| Selected baseline | `configs/selected_mvp_classifier.json` | Current fixed selected model | reference |
+| Mild context augmentation | `configs/selected_mvp_aug_context_mild.json` | Crop scale `0.65-1.0`, rotation `12`, color jitter `0.2/0.2/0.15` | pending |
+| Strong context augmentation | `configs/selected_mvp_aug_context_strong.json` | Crop scale `0.55-1.0`, rotation `15`, color jitter `0.25/0.25/0.2` | pending |
+| Mild context + random erasing | `configs/selected_mvp_aug_random_erasing.json` | Mild context settings plus `random_erasing_p=0.1` | pending |
+
+Selection rule for this batch:
+
+1. Do not accept a run that drops top-1 materially below the selected model's
+   `91.87%`.
+2. Prefer runs that reduce `background_or_context_bias` misclassifications after
+   review.
+3. Prefer runs that preserve or improve weak-class average F1 above `87.08%`.
+4. If metrics are close, keep the selected baseline rather than adding stronger
+   augmentation.
 
 ## Decision Rule
 
