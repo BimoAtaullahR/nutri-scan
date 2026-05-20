@@ -211,6 +211,41 @@ python scripts/evaluate_model.py \
 The output states whether the MVP targets are met: top-1 accuracy at least 80% and
 top-3 accuracy at least 90%.
 
+## Model Selection and Tuning
+
+Current model-development progress is tracked in `MODEL_COMPARISON.md`.
+
+The selected MVP classifier is `configs/selected_mvp_classifier.json`:
+
+- model: `convnext_tiny.fb_in1k`
+- dataset: `data/processed-v0.2`
+- image size: `256`
+- learning rate: `0.0001`
+- weight decay: `0.0005`
+- label smoothing: `0.1`
+
+MobileNetV3-Large remains the lightweight fallback if serving latency, memory,
+or artifact size becomes more important than recognition quality.
+
+Run the selected model or a tuning candidate with:
+
+```bash
+python scripts/train_classifier.py \
+  --config configs/selected_mvp_classifier.json \
+  --processed-dir data/processed-v0.2
+```
+
+The next planned tuning batch is context-robustness augmentation:
+
+```txt
+configs/selected_mvp_aug_context_mild.json
+configs/selected_mvp_aug_context_strong.json
+configs/selected_mvp_aug_random_erasing.json
+```
+
+Before adding another tuning axis, review `MODEL_COMPARISON.md` for the current
+selection rule and guardrails.
+
 ## Estimated Energy Ranges
 
 `configs/estimated_energy_ranges.json` maps every MVP food category to approximate
@@ -236,8 +271,9 @@ curl -X POST http://localhost:8000/infer \
 
 The current runtime classifier still defaults to
 `model-artifacts/baseline-food-classifier/` and returns a deterministic stub when
-local model artifacts are missing. After selecting a baseline v2 artifact for
-runtime use, update the classifier artifact wiring separately from training.
+local model artifacts are missing. The selected training config writes to
+`model-artifacts/selected-mvp-classifier/`; runtime artifact wiring should be
+updated separately before product/demo inference uses the selected model.
 
 ## Colab GPU Training
 
