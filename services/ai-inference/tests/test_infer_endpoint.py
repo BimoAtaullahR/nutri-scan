@@ -26,6 +26,7 @@ def test_infer_endpoint_accepts_image_and_returns_payload() -> None:
         infer(
             request=FakeRequest(),
             portion="medium",
+            image=None,
             classifier=FakeClassifier(),
         )
     )
@@ -91,3 +92,45 @@ def test_readyz_endpoint_reports_selected_model_metadata(monkeypatch, tmp_path) 
     assert payload["imageSize"] == 256
     assert payload["labelCount"] == 8
     assert payload["confidenceThreshold"] == 0.6
+
+
+def test_infer_endpoint_accepts_scan_image_upload_and_returns_recognizer_payload() -> None:
+    class FakeRequest:
+        async def body(self) -> bytes:
+            raise AssertionError("multipart image uploads should be read from the image field")
+
+    class FakeUpload:
+        async def read(self) -> bytes:
+            return b"fake image bytes"
+
+    class FakeClassifier:
+        model_version = "selected-test-model"
+        confidence_threshold = 0.7
+
+        def predict(self, image_bytes: bytes) -> list[dict[str, object]]:
+            assert image_bytes == b"fake image bytes"
+            return [
+                {"label": "rendang", "confidenceScore": 0.15},
+                {"label": "sate", "confidenceScore": 0.91},
+                {"label": "bakso", "confidenceScore": 0.08},
+            ]
+
+    route_paths = {route.path for route in app.routes}
+    assert "/infer" in route_paths
+
+    payload = asyncio.run(
+        infer(
+            request=FakeRequest(),
+            portion="large",
+            image=FakeUpload(),
+            classifier=FakeClassifier(),
+        )
+    )
+
+    assert payload["modelVersion"] == "selected-test-model"
+    assert payload["confidenceThreshold"] == 0.7
+    assert payload["foodCategory"] == {"slug": "sate", "confidenceScore": 0.91}
+    assert [item["slug"] for item in payload["alternatives"]] == ["rendang", "bakso"]
+    assert payload["estimatedEnergyRange"]["minKcal"] > 0
+    assert payload["coarsePortion"] == "large"
+    assert payload["isLowConfidence"] is False

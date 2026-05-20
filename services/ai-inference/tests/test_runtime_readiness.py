@@ -137,3 +137,36 @@ def test_classifier_fails_when_artifact_is_missing(tmp_path) -> None:
 
     with pytest.raises(ArtifactValidationError, match="missing required files"):
         classifier.predict(b"image bytes")
+
+
+def test_classifier_preprocessing_recipe_matches_selected_artifact_metadata(tmp_path) -> None:
+    artifact_dir = tmp_path / "selected-mvp-classifier"
+    artifact_dir.mkdir()
+    (artifact_dir / "model.pt").write_bytes(b"runtime model weights live outside git")
+    (artifact_dir / "label_map.json").write_text(
+        json.dumps({"idToLabel": {str(index): label for index, label in enumerate(MVP_LABELS)}})
+    )
+    (artifact_dir / "training_config_resolved.json").write_text(
+        json.dumps(
+            {
+                "model_name": "convnext_tiny.fb_in1k",
+                "num_classes": 8,
+                "class_names": MVP_LABELS,
+                "image_size": 256,
+            }
+        )
+    )
+    classifier = FoodClassifier(
+        config=RuntimeConfig(
+            artifact_dir=artifact_dir,
+            model_version="convnext-tiny-test",
+            confidence_threshold=0.6,
+        )
+    )
+
+    assert classifier.preprocessing_recipe() == {
+        "imageSize": 256,
+        "resizeSize": 294,
+        "normalizationMean": [0.485, 0.456, 0.406],
+        "normalizationStd": [0.229, 0.224, 0.225],
+    }

@@ -38,6 +38,16 @@ class FoodClassifier:
         self._device: str | None = None
         self._transform = None
 
+    def preprocessing_recipe(self) -> dict[str, object]:
+        metadata = validate_model_artifact(self.config)
+        image_size = int(metadata["imageSize"])
+        return {
+            "imageSize": image_size,
+            "resizeSize": int(image_size * 1.15),
+            "normalizationMean": IMAGENET_MEAN,
+            "normalizationStd": IMAGENET_STD,
+        }
+
     def _load_labels(self) -> list[str]:
         if self.label_map_path.exists():
             raw = json.loads(self.label_map_path.read_text())
@@ -58,7 +68,9 @@ class FoodClassifier:
 
         model_name = str(checkpoint.get("model_name", "efficientnet_b0"))
         num_classes = int(checkpoint.get("num_classes", len(self.labels)))
-        image_size = int(checkpoint.get("image_size", 224))
+        preprocessing = self.preprocessing_recipe()
+        image_size = int(preprocessing["imageSize"])
+        resize_size = int(preprocessing["resizeSize"])
         idx_to_class = checkpoint.get("idx_to_class")
         if isinstance(idx_to_class, dict):
             self.labels = [str(idx_to_class[str(index)]) for index in range(len(idx_to_class))]
@@ -73,7 +85,7 @@ class FoodClassifier:
         self._device = device
         self._transform = transforms.Compose(
             [
-                transforms.Resize(int(image_size * 1.15)),
+                transforms.Resize(resize_size),
                 transforms.CenterCrop(image_size),
                 transforms.ToTensor(),
                 transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
