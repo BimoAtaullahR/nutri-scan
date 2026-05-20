@@ -182,6 +182,46 @@ bash scripts/colab_retrain_baseline_v2.sh
 After each run, copy only the generated metric values into `MODEL_COMPARISON.md`.
 Keep `reports/`, `model-artifacts/`, dataset images, and ZIP files out of Git.
 
+## Model Comparison Workflow
+
+Use `MODEL_COMPARISON.md` as the source of truth for selected-model status,
+comparison metrics, and next tuning guardrails.
+
+Selected MVP classifier:
+
+```txt
+configs/selected_mvp_classifier.json
+```
+
+Current selected recipe:
+
+```txt
+convnext_tiny.fb_in1k
+image_size=256
+learning_rate=0.0001
+weight_decay=0.0005
+label_smoothing=0.1
+```
+
+Run the selected model:
+
+```bash
+python scripts/train_classifier.py \
+  --config configs/selected_mvp_classifier.json \
+  --processed-dir data/processed-v0.2
+```
+
+Next context-robustness tuning configs:
+
+```txt
+configs/selected_mvp_aug_context_mild.json
+configs/selected_mvp_aug_context_strong.json
+configs/selected_mvp_aug_random_erasing.json
+```
+
+After each run, copy only the metric summary into `MODEL_COMPARISON.md`. Keep
+`reports/`, `model-artifacts/`, dataset images, and ZIP files out of Git.
+
 ## Evaluation
 
 ```bash
@@ -202,8 +242,8 @@ MVP target:
 - top-1 accuracy >= 80%
 - top-3 accuracy >= 90%
 
-Current v0.2 metrics are not final until baseline v2 is retrained on
-`data/processed-v0.2` and evaluated against the cleaned held-out test split.
+For current selected-model metrics and model-comparison status, see
+`MODEL_COMPARISON.md`.
 
 ## Export Misclassified Images
 
