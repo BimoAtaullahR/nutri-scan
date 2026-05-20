@@ -103,6 +103,16 @@ cd /content/nutri-scan/services/ai-inference
 REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 ```
 
+Before training in Colab, verify that the cloned branch contains the selected
+augmentation recipe in `configs/selected_mvp_classifier.json`:
+
+```txt
+random_resized_crop_scale = [0.55, 1.0]
+rotation_degrees = 15
+color_jitter = 0.25 / 0.25 / 0.2
+random_erasing_p = 0.0
+```
+
 The helper installs training dependencies, fails fast when CUDA is unavailable,
 trains with `configs/selected_mvp_classifier.json` by default, evaluates
 predictions, exports misclassified images, and prints top-1, top-3, and

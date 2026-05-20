@@ -320,6 +320,11 @@ generated predictions, exports misclassified images, and prints a short
 weak-class summary. Set `CONFIG=...` only when intentionally rerunning an older
 baseline or comparison config.
 
+Before starting the Colab run, make sure the cloned branch contains the selected
+augmentation recipe in `configs/selected_mvp_classifier.json`: crop scale
+`0.55-1.0`, rotation `15`, color jitter `0.25/0.25/0.2`, and random erasing
+`0.0`.
+
 To validate the selected config without starting training:
 
 ```bash
