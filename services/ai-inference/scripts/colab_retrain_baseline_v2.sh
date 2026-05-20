@@ -23,38 +23,39 @@ EOF
 fi
 
 if [[ "$INSTALL_DEPS" == "1" ]]; then
+  echo "[1/6] Installing Python dependencies"
   python - <<'PY'
 from __future__ import annotations
 
 import subprocess
 import sys
 
+common_packages = [
+    "fastapi",
+    "python-multipart",
+    "uvicorn[standard]",
+    "pydantic-settings",
+    "timm",
+    "pillow",
+    "numpy",
+    "scikit-learn",
+    "pyyaml",
+]
+
 if sys.version_info >= (3, 12):
-    command = [sys.executable, "-m", "pip", "install", "-q", "-e", "."]
+    command = [sys.executable, "-m", "pip", "install", "-e", "."]
 else:
-    command = [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        "-q",
-        "fastapi",
-        "python-multipart",
-        "uvicorn[standard]",
-        "pydantic-settings",
-        "torch",
-        "torchvision",
-        "timm",
-        "pillow",
-        "numpy",
-        "scikit-learn",
-        "pyyaml",
-    ]
+    # Colab already ships CUDA-compatible torch/torchvision. Reinstalling them
+    # can take a long time and may replace the CUDA build with a CPU-only wheel.
+    command = [sys.executable, "-m", "pip", "install", *common_packages]
 
 subprocess.check_call(command)
 PY
+else
+  echo "[1/6] Skipping dependency install"
 fi
 
+echo "[2/6] Checking CUDA runtime"
 python - <<'PY'
 from __future__ import annotations
 
@@ -86,12 +87,14 @@ EOF
   exit 1
 fi
 
-python scripts/train_classifier.py \
+echo "[3/6] Validating training config and dataset layout"
+python -u scripts/train_classifier.py \
   --config "$CONFIG" \
   --processed-dir "$PROCESSED_DIR" \
   --dry-run
 
-python scripts/train_classifier.py \
+echo "[4/6] Training baseline classifier"
+python -u scripts/train_classifier.py \
   --config "$CONFIG" \
   --processed-dir "$PROCESSED_DIR"
 
@@ -105,15 +108,17 @@ print(config["report_dir"])
 PY
 )"
 
-python scripts/evaluate_model.py \
+echo "[5/6] Evaluating predictions"
+python -u scripts/evaluate_model.py \
   --predictions-file "$REPORT_DIR/predictions.json" \
   --report-dir "$REPORT_DIR"
 
-python scripts/export_misclassified.py \
+echo "[6/6] Exporting misclassified images and printing summary"
+python -u scripts/export_misclassified.py \
   --predictions-file "$REPORT_DIR/predictions.json" \
   --output-dir "$REPORT_DIR/misclassified"
 
-REPORT_DIR="$REPORT_DIR" python - <<'PY'
+REPORT_DIR="$REPORT_DIR" python -u - <<'PY'
 from __future__ import annotations
 
 import json
