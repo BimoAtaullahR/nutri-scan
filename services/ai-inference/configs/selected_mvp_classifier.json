@@ -15,6 +15,13 @@
   "use_amp": true,
   "num_workers": 0,
   "label_smoothing": 0.1,
+  "random_resized_crop_scale": [0.55, 1.0],
+  "horizontal_flip_p": 0.5,
+  "rotation_degrees": 15,
+  "color_jitter_brightness": 0.25,
+  "color_jitter_contrast": 0.25,
+  "color_jitter_saturation": 0.2,
+  "random_erasing_p": 0.0,
   "output_dir": "model-artifacts/selected-mvp-classifier",
   "report_dir": "reports/selected-mvp-classifier"
 }

@@ -3,10 +3,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-CONFIG="${CONFIG:-configs/baseline_training_v2.json}"
+CONFIG="${CONFIG:-configs/selected_mvp_classifier.json}"
 PROCESSED_DIR="${PROCESSED_DIR:-data/processed-v0.2}"
 INSTALL_DEPS="${INSTALL_DEPS:-1}"
 REQUIRE_CUDA="${REQUIRE_CUDA:-1}"
+DRY_RUN_ONLY="${DRY_RUN_ONLY:-0}"
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   cat <<'EOF'
@@ -14,10 +15,11 @@ Usage:
   REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 
 Environment:
-  CONFIG         Training config path. Default: configs/baseline_training_v2.json
+  CONFIG         Training config path. Default: configs/selected_mvp_classifier.json
   PROCESSED_DIR  Processed dataset path. Default: data/processed-v0.2
   INSTALL_DEPS   Install Python dependencies before training. Default: 1
   REQUIRE_CUDA   Fail when CUDA is unavailable. Default: 1
+  DRY_RUN_ONLY   Validate config and dataset layout without training. Default: 0
 EOF
   exit 0
 fi
@@ -93,7 +95,12 @@ python -u scripts/train_classifier.py \
   --processed-dir "$PROCESSED_DIR" \
   --dry-run
 
-echo "[4/6] Training baseline classifier"
+if [[ "$DRY_RUN_ONLY" == "1" ]]; then
+  echo "DRY_RUN_ONLY=1, skipping training and evaluation"
+  exit 0
+fi
+
+echo "[4/6] Training classifier"
 python -u scripts/train_classifier.py \
   --config "$CONFIG" \
   --processed-dir "$PROCESSED_DIR"

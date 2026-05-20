@@ -19,14 +19,14 @@ Backend does not own:
 - Model inference internals
 - Visual dominance detection implementation
 
-## Planned Structure
+## Structure
 
 ```txt
 cmd/api/               # API entrypoint
-internal/scan/         # scan lifecycle, orchestration, persistence
+internal/scan/         # scan lifecycle, orchestration, persistence, AI/ML Inference client
 internal/nudge/        # preventive nudge decision rules
 internal/trend/        # weekly energy trend reporting
-internal/inference/    # client adapter for AI/ML Inference
+internal/summary/      # daily and meal energy summary reporting
 internal/user/         # user/session model and persistence
 internal/platform/     # http, config, database, storage adapters
 migrations/            # database migrations
@@ -43,11 +43,11 @@ GET  /me/profile
 PUT  /me/profile
 POST /scans
 GET  /scans/{scanId}
+GET  /summaries/daily
+GET  /summaries/meals
 GET  /trends/weekly
 POST /nudges/{nudgeId}/responses
 ```
-
-Only `/healthz` and `POST /anonymous-users` return usable MVP skeleton responses. The other endpoints intentionally return `501 Not Implemented` until their repositories and workflows are implemented.
 
 ## Local Commands
 
