@@ -26,6 +26,30 @@ Use the same dataset, split, seed, optimizer, scheduler, epoch budget, and
 image size for the first pass. Tune only the strongest candidate after the
 architecture screen.
 
+## Comparison Stages
+
+There are two separate comparison stages:
+
+1. **Architecture screen** compares different model families against the
+   EfficientNet-B0 v2 control baseline. This stage does not require ConvNeXt-Tiny
+   tuning runs. It answers: "Which architecture is worth tuning?"
+2. **Tuning screen** compares small hyperparameter changes for the winning
+   architecture. This stage answers: "Which version of the selected architecture
+   should become the MVP candidate?"
+
+Do not wait for the three ConvNeXt-Tiny tuning configs before comparing the
+architecture-screen ConvNeXt-Tiny result with the project baseline. The current
+ConvNeXt-Tiny architecture-screen result is already valid for deciding that
+ConvNeXt-Tiny is the next tuning candidate.
+
+Run the three ConvNeXt-Tiny tuning configs only after the architecture screen
+selects ConvNeXt-Tiny. Use those tuning results to choose the final ConvNeXt-Tiny
+candidate, then compare that tuned candidate back against:
+
+- the EfficientNet-B0 v2 control baseline
+- the untuned ConvNeXt-Tiny architecture-screen result
+- MobileNetV3-Large as the lightweight fallback
+
 ## Colab Command
 
 Run from `services/ai-inference` in Colab:
@@ -48,9 +72,56 @@ Fill this table after each Colab run. Do not commit generated `reports/`,
 | Run | Config | Model | Top-1 | Top-3 | Rendang F1 | Gado-gado F1 | Soto F1 | Weak-class Avg F1 | Decision | Notes |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | Control | `configs/baseline_training_v2.json` | `efficientnet_b0` | TBD | TBD | TBD | TBD | TBD | TBD | reference | Colab baseline v0.2 |
-| 1 | `configs/model_comparison_mobilenetv3_large.json` | `mobilenetv3_large_100.ra_in1k` | TBD | TBD | TBD | TBD | TBD | TBD | pending | Lightweight MVP candidate |
-| 2 | `configs/model_comparison_efficientnet_b2.json` | `efficientnet_b2.ra_in1k` | TBD | TBD | TBD | TBD | TBD | TBD | pending | Stronger EfficientNet candidate |
-| 3 | `configs/model_comparison_convnext_tiny.json` | `convnext_tiny.fb_in1k` | TBD | TBD | TBD | TBD | TBD | TBD | optional | Heavier modern classifier |
+| 1 | `configs/model_comparison_mobilenetv3_large.json` | `mobilenetv3_large_100.ra_in1k` | 86.68% | 99.10% | 80.95% | 78.65% | 81.08% | 80.23% | keep as lightweight fallback | Smallest artifact; weaker weak-class recall than ConvNeXt-Tiny |
+| 2 | `configs/model_comparison_efficientnet_b2.json` | `efficientnet_b2.ra_in1k` | 85.33% | 97.97% | 79.55% | 75.86% | 81.42% | 78.94% | reject for now | Worse than MobileNetV3-Large and ConvNeXt-Tiny in this screen |
+| 3 | `configs/model_comparison_convnext_tiny.json` | `convnext_tiny.fb_in1k` | 91.87% | 98.65% | 87.80% | 90.38% | 88.29% | 88.83% | tune next | Best accuracy and weak-class F1, but largest artifact |
+
+## Architecture Screen Result
+
+ConvNeXt-Tiny is the strongest candidate from this architecture screen. It has
+the best top-1 accuracy, keeps top-3 accuracy above the MVP target, and improves
+all weak-class F1 values compared with the other comparison candidates.
+
+Artifact sizes:
+
+| Model | Artifact Size |
+| --- | ---: |
+| `mobilenetv3_large_100.ra_in1k` | 16.25 MB |
+| `efficientnet_b2.ra_in1k` | 29.82 MB |
+| `convnext_tiny.fb_in1k` | 106.20 MB |
+
+Key confusion-pair counts:
+
+| Pair | MobileNetV3-Large | EfficientNet-B2 | ConvNeXt-Tiny |
+| --- | ---: | ---: | ---: |
+| `soto` as `bakso` | 3 | 3 | 1 |
+| `bakso` as `soto` | 1 | 2 | 2 |
+| `rendang` as `nasi_goreng` | 2 | 4 | 1 |
+| `rendang` as `gado_gado` | 0 | 0 | 2 |
+| `gado_gado` as `nasi_goreng` | 2 | 2 | 1 |
+| `gado_gado` as `soto` | 4 | 5 | 1 |
+
+Next recommended step: tune ConvNeXt-Tiny first, while keeping MobileNetV3-Large
+as the lightweight deployment fallback if serving size or latency becomes the
+binding constraint.
+
+For the current MVP demo phase, prioritize recognition quality over model size.
+Use ConvNeXt-Tiny as the primary tuning candidate and keep MobileNetV3-Large as
+the fallback if FastAPI serving latency, memory use, or artifact size becomes too
+costly for the demo environment.
+
+## ConvNeXt-Tiny Tuning Plan
+
+Run a small tuning screen before changing the selected MVP classifier. Keep the
+dataset, split, seed, optimizer, scheduler, epoch budget, weight decay, and label
+smoothing fixed unless a later result gives a specific reason to change them.
+
+| Run | Config | Change | Decision |
+| --- | --- | --- | --- |
+| Control | `configs/model_comparison_convnext_tiny.json` | Architecture screen result | current best |
+| Tune 1 | `configs/convnext_tiny_tune_lr5e5.json` | learning rate `0.0001` -> `0.00005` | pending |
+| Tune 2 | `configs/convnext_tiny_tune_img256.json` | image size `224` -> `256` | pending |
+| Tune 3 | `configs/convnext_tiny_tune_lr5e5_img256.json` | learning rate `0.00005`, image size `256` | pending |
 
 ## Decision Rule
 

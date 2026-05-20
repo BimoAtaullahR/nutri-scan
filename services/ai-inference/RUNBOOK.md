@@ -106,6 +106,50 @@ The helper installs training dependencies, fails fast when CUDA is unavailable,
 trains with `configs/baseline_training_v2.json`, evaluates predictions, exports
 misclassified images, and prints top-1, top-3, and weak-class metrics.
 
+## Model Comparison Workflow
+
+Use `MODEL_COMPARISON.md` to track classifier architecture screens and tuning
+screens. The comparison flow has two stages:
+
+1. Architecture screen: compare model families against the EfficientNet-B0 v2
+   control baseline using the same dataset and training recipe.
+2. Tuning screen: tune only the strongest architecture from the architecture
+   screen.
+
+The ConvNeXt-Tiny tuning configs are not required before comparing ConvNeXt-Tiny
+with the original EfficientNet-B0 v2 baseline. They are only needed after
+ConvNeXt-Tiny has already been selected as the tuning candidate.
+
+Architecture-screen configs:
+
+```txt
+configs/model_comparison_mobilenetv3_large.json
+configs/model_comparison_efficientnet_b2.json
+configs/model_comparison_convnext_tiny.json
+```
+
+ConvNeXt-Tiny tuning configs:
+
+```txt
+configs/convnext_tiny_tune_lr5e5.json
+configs/convnext_tiny_tune_img256.json
+configs/convnext_tiny_tune_lr5e5_img256.json
+```
+
+Run any comparison config in Colab by overriding `CONFIG`:
+
+```bash
+cd /content/nutri-scan/services/ai-inference
+CONFIG=configs/model_comparison_convnext_tiny.json \
+PROCESSED_DIR=data/processed-v0.2 \
+REQUIRE_CUDA=1 \
+INSTALL_DEPS=1 \
+bash scripts/colab_retrain_baseline_v2.sh
+```
+
+After each run, copy only the generated metric values into `MODEL_COMPARISON.md`.
+Keep `reports/`, `model-artifacts/`, dataset images, and ZIP files out of Git.
+
 ## Evaluation
 
 ```bash
