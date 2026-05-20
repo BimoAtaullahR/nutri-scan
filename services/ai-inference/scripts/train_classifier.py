@@ -225,7 +225,10 @@ def build_transforms(config: TrainingConfig):
     from torchvision import transforms
 
     train_steps = [
-        transforms.RandomResizedCrop(config.image_size, scale=config.random_resized_crop_scale),
+        transforms.RandomResizedCrop(
+            config.image_size,
+            scale=config.random_resized_crop_scale,
+        ),
         transforms.RandomHorizontalFlip(p=config.horizontal_flip_p),
         transforms.RandomRotation(degrees=config.rotation_degrees),
         transforms.ColorJitter(
@@ -239,7 +242,9 @@ def build_transforms(config: TrainingConfig):
     if config.random_erasing_p > 0:
         train_steps.append(transforms.RandomErasing(p=config.random_erasing_p))
 
-    train_transform = transforms.Compose(train_steps)
+    train_transform = transforms.Compose(
+        train_steps
+    )
     eval_transform = transforms.Compose(
         [
             transforms.Resize(int(config.image_size * 1.15)),
@@ -359,6 +364,14 @@ def create_criterion(config: TrainingConfig):
     from torch import nn
 
     return nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
+
+
+def format_float(value: float) -> str:
+    return f"{value:g}"
+
+
+def format_crop_scale(value: tuple[float, float]) -> str:
+    return f"{format_float(value[0])}-{format_float(value[1])}"
 
 
 def autocast_context(use_amp: bool):
@@ -531,6 +544,7 @@ def train_classifier(config: TrainingConfig, processed_dir: Path) -> None:
     split_dirs = validate_processed_dataset(processed_dir, config.class_names)
 
     import torch
+
     set_seed(config.seed)
     device = detect_device()
     use_amp = config.use_amp and device == "cuda"
@@ -626,11 +640,13 @@ def main() -> None:
         print(
             f"model={config.model_name} classes={len(config.class_names)} "
             f"imageSize={config.image_size} batchSize={config.batch_size} "
-            f"epochs={config.epochs} labelSmoothing={config.label_smoothing:g} "
-            f"cropScale={config.random_resized_crop_scale[0]:g}-{config.random_resized_crop_scale[1]:g} "
-            f"rotation={config.rotation_degrees:g} "
-            f"colorJitter={config.color_jitter_brightness:g}/{config.color_jitter_contrast:g}/{config.color_jitter_saturation:g} "
-            f"randomErasing={config.random_erasing_p:g} "
+            f"epochs={config.epochs} labelSmoothing={format_float(config.label_smoothing)} "
+            f"cropScale={format_crop_scale(config.random_resized_crop_scale)} "
+            f"rotation={format_float(config.rotation_degrees)} "
+            f"colorJitter={format_float(config.color_jitter_brightness)}/"
+            f"{format_float(config.color_jitter_contrast)}/"
+            f"{format_float(config.color_jitter_saturation)} "
+            f"randomErasing={format_float(config.random_erasing_p)} "
             f"artifactDir={config.output_dir.as_posix()} "
             f"reportDir={config.report_dir.as_posix()}"
         )

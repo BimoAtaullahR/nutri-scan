@@ -21,4 +21,5 @@ def test_runbook_documents_full_demo_path() -> None:
     assert "reports/baseline-food-classifier/metrics.json" in runbook
     assert "curl http://localhost:8000/readyz" in runbook
     assert "curl -X POST" in runbook
-    assert "of returning stub predictions" in runbook
+    assert "MODEL_COMPARISON.md" in runbook
+    assert "configs/selected_mvp_classifier.json" in runbook
