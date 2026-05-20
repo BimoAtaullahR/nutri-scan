@@ -7,18 +7,31 @@ from pathlib import Path
 from PIL import Image
 
 from app.payload import Prediction
+from app.runtime import RuntimeConfig, validate_model_artifact
 
-DEFAULT_ARTIFACT_DIR = Path("model-artifacts/baseline-food-classifier")
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 class FoodClassifier:
-    def __init__(self, artifact_dir: Path = DEFAULT_ARTIFACT_DIR) -> None:
-        self.artifact_dir = artifact_dir
-        self.model_path = artifact_dir / "model.pt"
-        self.label_map_path = artifact_dir / "label_map.json"
-        self.model_version = "baseline-0.1.0"
+    def __init__(
+        self,
+        config: RuntimeConfig | None = None,
+        artifact_dir: Path | None = None,
+    ) -> None:
+        if artifact_dir is not None:
+            base_config = config or RuntimeConfig.from_env()
+            config = RuntimeConfig(
+                artifact_dir=artifact_dir,
+                model_version=base_config.model_version,
+                confidence_threshold=base_config.confidence_threshold,
+            )
+        self.config = config or RuntimeConfig.from_env()
+        self.artifact_dir = self.config.artifact_dir
+        self.model_path = self.artifact_dir / "model.pt"
+        self.label_map_path = self.artifact_dir / "label_map.json"
+        self.model_version = self.config.model_version
+        self.confidence_threshold = self.config.confidence_threshold
         self.labels = self._load_labels()
         self._model = None
         self._checkpoint: dict[str, object] | None = None
@@ -96,13 +109,7 @@ class FoodClassifier:
         if not image_bytes:
             raise ValueError("Image upload cannot be empty")
 
-        if not self.model_path.exists():
-            return [
-                {"label": self.labels[0], "confidenceScore": 0.61},
-                {"label": self.labels[1], "confidenceScore": 0.24},
-                {"label": self.labels[2], "confidenceScore": 0.15},
-            ]
-
+        validate_model_artifact(self.config)
         return self._predict_with_model(image_bytes)
 
 

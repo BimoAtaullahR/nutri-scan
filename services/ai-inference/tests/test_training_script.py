@@ -3,7 +3,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -78,15 +77,15 @@ def test_training_criterion_uses_configured_label_smoothing() -> None:
     assert criterion.label_smoothing == 0.1
 
 
-def test_training_config_uses_default_augmentation_settings() -> None:
+def test_selected_training_config_uses_strong_context_augmentation_settings() -> None:
     from scripts.train_classifier import load_config
 
     config = load_config(ROOT / "configs" / "selected_mvp_classifier.json")
 
-    assert config.random_resized_crop_scale == (0.75, 1.0)
+    assert config.random_resized_crop_scale == (0.55, 1.0)
     assert config.horizontal_flip_p == 0.5
-    assert config.rotation_degrees == 10
-    assert config.color_jitter_brightness == 0.15
-    assert config.color_jitter_contrast == 0.15
-    assert config.color_jitter_saturation == 0.10
+    assert config.rotation_degrees == 15
+    assert config.color_jitter_brightness == 0.25
+    assert config.color_jitter_contrast == 0.25
+    assert config.color_jitter_saturation == 0.20
     assert config.random_erasing_p == 0.0

@@ -233,6 +233,18 @@ python scripts/predict_image.py --model-path model-artifacts/baseline-food-class
 
 ## Serving
 
+Default runtime configuration uses the selected MVP Model Artifact:
+
+```txt
+NUTRISCAN_MODEL_ARTIFACT_DIR=model-artifacts/selected-mvp-classifier
+NUTRISCAN_MODEL_VERSION=selected-mvp-classifier
+NUTRISCAN_CONFIDENCE_THRESHOLD=0.6
+```
+
+Override these environment variables only when intentionally serving another
+artifact package. The artifact directory must contain `model.pt`,
+`label_map.json`, and `training_config_resolved.json`.
+
 ```bash
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -241,6 +253,12 @@ Health check:
 
 ```bash
 curl http://localhost:8000/healthz
+```
+
+Readiness and active model metadata:
+
+```bash
+curl http://localhost:8000/readyz
 ```
 
 ## Smoke Test
@@ -254,19 +272,19 @@ Example response:
 
 ```json
 {
-  "modelVersion": "baseline-0.1.0",
+  "modelVersion": "selected-mvp-classifier",
   "foodCategory": {
     "slug": "sate",
-    "confidenceScore": 0.61
+    "confidenceScore": 0.91
   },
   "alternatives": [
     {
       "slug": "rendang",
-      "confidenceScore": 0.24
+      "confidenceScore": 0.05
     },
     {
       "slug": "bakso",
-      "confidenceScore": 0.15
+      "confidenceScore": 0.02
     }
   ],
   "coarsePortion": "medium",
@@ -283,5 +301,6 @@ Example response:
 
 - Estimated energy is a lookup range, not exact calorie detection.
 - Real model inference depends on the selected local model artifact being present.
-- The service returns a deterministic stub prediction when local model artifacts are missing.
+- Missing or invalid selected Model Artifacts fail readiness and inference instead
+  of returning stub predictions.
 - Nasi padang is deferred from the MVP class set.
