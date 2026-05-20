@@ -297,6 +297,30 @@ Example response:
 }
 ```
 
+## Backend API Smoke Validation
+
+Use this when you need to prove the selected Model Artifact works end-to-end
+through the Backend API **Core Scan Loop**. The test is gated to skip when
+the selected Model Artifact is unavailable or the AI/ML service is not ready.
+
+1. Ensure the selected Model Artifact is present and the AI/ML Inference
+   service is running:
+
+   ```bash
+   export NUTRISCAN_MODEL_ARTIFACT_DIR=/path/to/selected-mvp-classifier
+   export NUTRISCAN_MODEL_VERSION=selected-mvp-classifier
+   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+   curl http://localhost:8000/readyz
+   ```
+
+2. Run the Backend API smoke test with a real database:
+
+   ```bash
+   export TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/nutriscan?sslmode=disable
+   export TEST_AI_INFERENCE_URL=http://localhost:8000
+   go test ./services/backend/cmd/api -run TestCoreScanLoopSmoke -v
+   ```
+
 ## Known Limitations
 
 - Estimated energy is a lookup range, not exact calorie detection.

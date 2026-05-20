@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,33 +27,38 @@ func TestCoreScanLoopSmoke(t *testing.T) {
 		t.Skip("TEST_DATABASE_URL not set, skipping end-to-end smoke test")
 	}
 
+	aiURL := strings.TrimSpace(os.Getenv("TEST_AI_INFERENCE_URL"))
+	if aiURL == "" {
+		t.Skip("TEST_AI_INFERENCE_URL not set, skipping selected Model Artifact smoke test")
+	}
+
 	ctx := context.Background()
+	readiness, err := fetchAIInferenceReadiness(ctx, aiURL)
+	if err != nil {
+		t.Skipf("AI/ML Inference not ready: %v", err)
+	}
+	expectedModelVersion := strings.TrimSpace(os.Getenv("NUTRISCAN_MODEL_VERSION"))
+	if expectedModelVersion == "" {
+		expectedModelVersion = "selected-mvp-classifier"
+	}
+	if readiness.ModelVersion != expectedModelVersion {
+		t.Skipf(
+			"AI/ML Inference modelVersion %q does not match expected %q",
+			readiness.ModelVersion,
+			expectedModelVersion,
+		)
+	}
+
 	db, err := database.Open(ctx, dbURL)
 	if err != nil {
 		t.Fatalf("failed to connect to db: %v", err)
 	}
 	defer db.Close()
 
-	// Setup fake AI Inference Server
-	aiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
-			"modelVersion": "food-model-smoke",
-			"foodCategory": {"slug": "nasi_goreng", "confidenceScore": 0.85},
-			"alternatives": [],
-			"coarsePortion": "medium",
-			"estimatedEnergyRange": {"minKcal": 400, "maxKcal": 500},
-			"isLowConfidence": false,
-			"confidenceThreshold": 0.6
-		}`))
-	}))
-	defer aiServer.Close()
-
 	cfg := config.Config{
 		HTTPAddr:       ":8080",
 		DatabaseURL:    dbURL,
-		AIInferenceURL: aiServer.URL,
+		AIInferenceURL: aiURL,
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -178,4 +186,68 @@ func TestCoreScanLoopSmoke(t *testing.T) {
 		t.Fatalf("get weekly trend status: %d", resp.StatusCode)
 	}
 	resp.Body.Close()
+}
+
+type aiReadiness struct {
+	Status       string `json:"status"`
+	ModelVersion string `json:"modelVersion"`
+}
+
+func fetchAIInferenceReadiness(ctx context.Context, baseURL string) (aiReadiness, error) {
+	endpoint := strings.TrimRight(baseURL, "/") + "/readyz"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return aiReadiness{}, err
+	}
+	client := http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return aiReadiness{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return aiReadiness{}, fmt.Errorf("readyz returned status %d", resp.StatusCode)
+	}
+	var payload aiReadiness
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return aiReadiness{}, err
+	}
+	if payload.Status != "ready" {
+		return aiReadiness{}, errors.New("readyz status is not ready")
+	}
+	if payload.ModelVersion == "" {
+		return aiReadiness{}, errors.New("readyz modelVersion is missing")
+	}
+	return payload, nil
+}
+
+func TestFetchAIInferenceReadinessSuccess(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(aiReadiness{
+			Status:       "ready",
+			ModelVersion: "selected-mvp-classifier",
+		})
+	}))
+	defer server.Close()
+
+	payload, err := fetchAIInferenceReadiness(context.Background(), server.URL)
+	if err != nil {
+		t.Fatalf("expected readiness payload, got %v", err)
+	}
+	if payload.ModelVersion != "selected-mvp-classifier" {
+		t.Fatalf("expected modelVersion, got %q", payload.ModelVersion)
+	}
+}
+
+func TestFetchAIInferenceReadinessNon2xx(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	_, err := fetchAIInferenceReadiness(context.Background(), server.URL)
+	if err == nil {
+		t.Fatal("expected error for non-2xx readiness")
+	}
 }
