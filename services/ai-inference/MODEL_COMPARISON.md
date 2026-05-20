@@ -291,6 +291,53 @@ average F1 by `+3.15pp`, and reduced total misclassified images from `36` to
 `27`. The next work should promote this recipe, validate serving/runtime
 compatibility, then run focused error analysis on the new `27` failures.
 
+## Final Selected Model Error Analysis
+
+Reviewed file:
+
+```txt
+reports/selected-mvp-classifier/error_analysis.xlsx
+```
+
+Parsed summary:
+
+| Category | Count |
+| --- | ---: |
+| Total reviewed misclassified images | 27 |
+| `model_error` | 25 |
+| `out_of_scope` | 1 |
+| `ambiguous` | 1 |
+| `keep_for_tuning_signal` | 25 |
+| `exclude_in_next_dataset` | 2 |
+
+Error type breakdown:
+
+| Error Type | Count |
+| --- | ---: |
+| `background_or_context_bias` | 13 |
+| `weak_class_overlap` | 7 |
+| `image_quality` | 4 |
+| `low_visual_dominance` | 2 |
+| `mixed_food` | 1 |
+
+Largest repeated confusion:
+
+- `bakso` as `soto`: 3, mixed causes across context, visual dominance, and
+  weak-class overlap
+- `pempek` as `gado_gado`: 3, two valid tuning signals and one out-of-scope
+  exclusion candidate
+- `sate` as `rendang`: 3, all `weak_class_overlap`
+- `gado_gado` as `soto`: 2, both `background_or_context_bias`
+- `soto` as `gudeg`: 2, both `background_or_context_bias`
+
+Conclusion: the final selected model's remaining failures are mostly valid
+model errors. Only two images should be excluded in a future dataset version, so
+do not run a broad dataset cleanup before MVP integration. The next engineering
+step is to wire and validate this artifact in the inference service. Further
+model improvement, if needed after serving validation, should target
+`background_or_context_bias` and `weak_class_overlap` with more representative
+examples or a small, validation-driven tuning batch.
+
 Selection rule for this batch:
 
 1. Do not accept a run that drops top-1 materially below the selected model's
