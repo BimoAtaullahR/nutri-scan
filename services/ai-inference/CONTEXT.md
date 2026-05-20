@@ -64,6 +64,10 @@ _Avoid_: shared working dataset, Git-tracked dataset
 The teammate responsible for publishing official dataset versions to the dataset drop folder.
 _Avoid_: sole model owner, Git approver
 
+**Model Artifact**:
+A versioned classifier package used by AI/ML Inference to recognize food categories at runtime.
+_Avoid_: Git-tracked model, notebook output
+
 **Portion Ground Truth Subset**:
 A smaller evaluation set with measured portion or weight information for checking energy estimate quality.
 _Avoid_: required label for every dataset image, full nutrition dataset
@@ -125,6 +129,7 @@ _Avoid_: calorie payload, nudge payload, segmentation result
 - A **Food Category** has a **Confidence Score**
 - A **Low-Confidence Fallback** may use a **Fallback Label Assistant**
 - A **Food Category** may have **Visual Dominance**
+- A **Model Artifact** produces **Food Category** predictions for a **Recognizer Payload**
 - **Estimated Energy** is approximate and belongs to the inference result, not a medical diagnosis
 - **Per-Food Estimated Energy** belongs to one detected **Food Category** within an **Inference Payload**
 - A **Review-Needed Energy Estimate** should lead the Backend API toward a review-oriented nudge rather than a confident portion-reduction nudge
@@ -179,6 +184,7 @@ _Avoid_: calorie payload, nudge payload, segmentation result
 - "AI contract" was too broad for the shortened MVP — resolved: MVP uses a **Recognizer Payload** and Backend API adds portion, energy range, and nudge decisions.
 - "shared dataset folder" was ambiguous between a working directory and an archive exchange — resolved: the team uses a **Dataset Drop Folder** for versioned archives, not direct training work.
 - "who updates the dataset" was ambiguous — resolved: teammates may propose changes, but a **Dataset Owner** publishes official dataset versions.
+- "final model" was ambiguous between a notebook result and runtime package — resolved: AI/ML Inference consumes a versioned **Model Artifact** at runtime.
 
 ## Future Research
 
