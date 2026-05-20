@@ -52,7 +52,7 @@ class FoodClassifier:
         if self.label_map_path.exists():
             raw = json.loads(self.label_map_path.read_text())
             return [raw["idToLabel"][str(index)] for index in range(len(raw["idToLabel"]))]
-        return ["sate", "rendang", "bakso"]
+        return []
 
     def _load_model(self):
         if self._model is not None:

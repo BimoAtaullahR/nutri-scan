@@ -127,6 +127,24 @@ def test_stale_artifact_labels_fail_readiness(tmp_path) -> None:
         validate_model_artifact(config)
 
 
+def test_classifier_does_not_fallback_to_hardcoded_labels_when_label_map_missing(tmp_path) -> None:
+    artifact_dir = tmp_path / "selected-mvp-classifier"
+    artifact_dir.mkdir()
+    (artifact_dir / "model.pt").write_bytes(b"runtime model weights live outside git")
+
+    classifier = FoodClassifier(
+        config=RuntimeConfig(
+            artifact_dir=artifact_dir,
+            model_version="convnext-tiny-test",
+            confidence_threshold=0.6,
+        )
+    )
+
+    assert classifier.labels == [], (
+        "Classifier must not fall back to hardcoded labels when label_map.json is missing"
+    )
+
+
 def test_classifier_fails_when_artifact_is_missing(tmp_path) -> None:
     config = RuntimeConfig(
         artifact_dir=tmp_path / "missing-selected-artifact",
