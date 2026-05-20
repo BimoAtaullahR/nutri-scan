@@ -6,9 +6,9 @@ import json
 import sys
 from pathlib import Path
 
-
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 SPLITS = ("train", "validation", "test")
+SPLIT_ALIASES = {"validation": ("validation", "val")}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -85,7 +85,7 @@ def inspect_category(
     risks: list[str] = []
 
     for split in SPLITS:
-        split_dir = processed_dir / split / category
+        split_dir = resolve_split_dir(processed_dir, split) / category
         if not split_dir.exists():
             split_counts[split] = 0
             risks.append(f"missing split folder: {split}/{category}")
@@ -115,6 +115,14 @@ def count_images(directory: Path) -> int:
         for path in directory.iterdir()
         if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
     )
+
+
+def resolve_split_dir(processed_dir: Path, split: str) -> Path:
+    for candidate in SPLIT_ALIASES.get(split, (split,)):
+        split_dir = processed_dir / candidate
+        if split_dir.is_dir():
+            return split_dir
+    return processed_dir / split
 
 
 if __name__ == "__main__":

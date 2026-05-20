@@ -230,31 +230,72 @@ The generated report records train/validation/test counts, total images per clas
 minimum-review status, and weak-class risks. Do not commit the generated report;
 copy final reviewed counts into the table below.
 
+The audit script accepts either `validation/` or `val/` for the validation split.
+The current local processed dataset uses `val/`.
+
 ## Final Reviewed Counts
 
-Status: curated local processed dataset audited on 2026-05-15.
+Status: v0.2 reviewed local processed dataset audited on 2026-05-20.
+
+Source review file:
+
+```txt
+reports/baseline-food-classifier-v2/misclassified/misclassified_review.csv
+```
+
+v0.2 was created by copying `data/processed` to `data/processed-v0.2` and
+applying the misclassified review decisions:
+
+- reviewed images: 93
+- kept hard examples: 39
+- removed ambiguous images: 30
+- removed bad-quality images: 23
+- removed duplicate images: 1
+- relabeled images: 0
 
 Audit command:
 
 ```bash
 python scripts/curate_dataset.py \
-  --processed-dir data/processed \
+  --processed-dir data/processed-v0.2 \
   --class-map configs/mvp_food_categories.json \
-  --report-path reports/dataset-curation/curation_report.json
+  --report-path reports/dataset-curation/curation_report_v0.2.json
 ```
 
-Total curated images: 3,419.
+Total curated images: 3,262.
 
 | Class | Train | Validation | Test | Total | Reviewed >= 100 | Risks |
 | --- | ---: | ---: | ---: | ---: | --- | --- |
-| `nasi_goreng` | 356 | 64 | 87 | 507 | Yes | None from audit |
-| `sate` | 353 | 75 | 81 | 509 | Yes | None from audit |
-| `rendang` | 231 | 45 | 52 | 328 | Yes | None from audit |
-| `bakso` | 309 | 62 | 69 | 440 | Yes | None from audit |
-| `gado_gado` | 251 | 33 | 58 | 342 | Yes | None from audit |
-| `soto` | 331 | 72 | 109 | 512 | Yes | None from audit |
-| `pempek` | 296 | 44 | 84 | 424 | Yes | None from audit |
-| `gudeg` | 237 | 43 | 77 | 357 | Yes | None from audit |
+| `nasi_goreng` | 359 | 77 | 72 | 508 | Yes | None from audit |
+| `sate` | 352 | 75 | 71 | 498 | Yes | None from audit |
+| `rendang` | 229 | 49 | 43 | 321 | Yes | None from audit |
+| `bakso` | 306 | 66 | 60 | 432 | Yes | None from audit |
+| `gado_gado` | 259 | 56 | 50 | 365 | Yes | None from audit |
+| `soto` | 334 | 72 | 58 | 464 | Yes | None from audit |
+| `pempek` | 281 | 60 | 55 | 396 | Yes | None from audit |
+| `gudeg` | 201 | 43 | 34 | 278 | Yes | None from audit |
+
+## Dataset v0.2 Update Flow
+
+Create or refresh the reviewed dataset copy from `services/ai-inference`:
+
+```bash
+python scripts/apply_misclassified_review.py \
+  --review-csv reports/baseline-food-classifier-v2/misclassified/misclassified_review.csv \
+  --source-processed-dir data/processed \
+  --output-processed-dir data/processed-v0.2 \
+  --report-path reports/dataset-curation/misclassified_review_apply_report.json \
+  --force
+```
+
+Run the audit after applying the review:
+
+```bash
+python scripts/curate_dataset.py \
+  --processed-dir data/processed-v0.2 \
+  --class-map configs/mvp_food_categories.json \
+  --report-path reports/dataset-curation/curation_report_v0.2.json
+```
 
 ## MVP Acceptance Targets
 
