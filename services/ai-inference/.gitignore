@@ -1,5 +1,6 @@
 data/raw/
 data/processed/
+data/processed-*/
 model-artifacts/*
 !model-artifacts/.gitkeep
 notebooks/.ipynb_checkpoints/

@@ -197,6 +197,10 @@ _Avoid_: calorie payload, nudge payload, segmentation result
 - Use FastAPI for the inference HTTP service.
 - Use PyTorch and timm for classifier training and inference.
 - Prefer lightweight pretrained baselines such as EfficientNet-B0 or MobileNetV3.
+- Use `nutriscan-mvp-food-dataset-v0.2` / `data/processed-v0.2` as the active
+  reviewed dataset for EfficientNet-B0 baseline v2 retraining.
+- Apply misclassified review decisions through `scripts/apply_misclassified_review.py`;
+  do not edit the source processed dataset in place.
 - Evaluate with top-1 accuracy, top-3 accuracy, and a confusion matrix on a held-out test set.
 - Evaluate per-food research with item match rate, top-3 coverage, coarse portion accuracy, energy range quality, review-needed rate, direct nudge rate, and user correction rate.
 - Store MVP evaluation outputs as local metrics files, not in an experiment tracking service.

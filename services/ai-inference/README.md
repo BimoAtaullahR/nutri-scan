@@ -42,7 +42,9 @@ Commit code, manifests, and lightweight config only. Do not commit datasets, tra
 
 Use `model-artifacts/` only as a local placeholder for runtime files downloaded from an external artifact store.
 
-Keep raw and processed datasets local under `data/raw/` and `data/processed/`. Commit only manifests, scripts, and lightweight config.
+Keep raw and processed datasets local under `data/raw/`, `data/processed/`, and
+versioned processed folders such as `data/processed-v0.2/`. Commit only
+manifests, scripts, and lightweight config.
 
 For teammate dataset sharing, see `DATASET_COLLABORATION.md`.
 
@@ -114,7 +116,7 @@ Output layout:
 ```txt
 data/processed/
   train/<food_category>/
-  validation/<food_category>/
+  validation/<food_category>/  # `val/` is also accepted by training and audit scripts.
   test/<food_category>/
 ```
 
@@ -133,41 +135,77 @@ Use the report to update `data/manifests/mvp_food_dataset.md` with final
 train/validation/test counts and weak-class risks. The report is ignored by git;
 only reviewed counts and notes should be committed.
 
+## Misclassified Review Cleanup
+
+Dataset v0.2 is created from the reviewed misclassification CSV rather than by
+editing v0.1 in place. The active reviewed folder is:
+
+```txt
+data/processed-v0.2/
+```
+
+Apply the review decisions from the baseline v2 misclassification review:
+
+```bash
+python scripts/apply_misclassified_review.py \
+  --review-csv reports/baseline-food-classifier-v2/misclassified/misclassified_review.csv \
+  --source-processed-dir data/processed \
+  --output-processed-dir data/processed-v0.2 \
+  --report-path reports/dataset-curation/misclassified_review_apply_report.json \
+  --force
+```
+
+Audit v0.2:
+
+```bash
+python scripts/curate_dataset.py \
+  --processed-dir data/processed-v0.2 \
+  --class-map configs/mvp_food_categories.json \
+  --report-path reports/dataset-curation/curation_report_v0.2.json
+```
+
+The current v0.2 review removed 54 test images from 93 reviewed
+misclassifications and kept 39 hard examples. No relabel decisions were applied.
+
 ## Baseline Training
 
-The MVP baseline uses a lightweight pretrained image classifier and writes local artifacts to
-`model-artifacts/baseline-food-classifier/`. These artifacts are ignored by git.
+The current MVP baseline v2 uses EfficientNet-B0 with label smoothing and
+weight decay from `configs/baseline_training_v2.json`. It writes local artifacts
+to `model-artifacts/baseline-food-classifier-v2/`. These artifacts are ignored by git.
 
 Validate training config without a dataset:
 
 ```bash
 python scripts/train_classifier.py \
-  --config configs/baseline_training.json \
-  --processed-dir data/processed \
+  --config configs/baseline_training_v2.json \
+  --processed-dir data/processed-v0.2 \
   --dry-run
 ```
 
-Train once `data/processed` exists:
+Train once `data/processed-v0.2` exists:
 
 ```bash
 python scripts/train_classifier.py \
-  --config configs/baseline_training.json \
-  --processed-dir data/processed
+  --config configs/baseline_training_v2.json \
+  --processed-dir data/processed-v0.2
 ```
+
+CPU-only training is slow for EfficientNet-B0. Prefer a GPU runtime such as
+Google Colab for baseline v2 retraining.
 
 ## Baseline Evaluation
 
 Evaluation reports are local-only and ignored by git. The evaluator writes:
 
-- `reports/baseline-food-classifier/metrics.json`
-- `reports/baseline-food-classifier/confusion_matrix.json`
+- `reports/baseline-food-classifier-v2/metrics.json`
+- `reports/baseline-food-classifier-v2/confusion_matrix.json`
 
 Run evaluation from a predictions file:
 
 ```bash
 python scripts/evaluate_model.py \
-  --predictions-file reports/baseline-food-classifier/predictions.json \
-  --report-dir reports/baseline-food-classifier
+  --predictions-file reports/baseline-food-classifier-v2/predictions.json \
+  --report-dir reports/baseline-food-classifier-v2
 ```
 
 The output states whether the MVP targets are met: top-1 accuracy at least 80% and
@@ -196,6 +234,30 @@ curl -X POST http://localhost:8000/infer \
   -F "portion=medium"
 ```
 
-The endpoint looks for local artifacts in `model-artifacts/baseline-food-classifier/`.
-If artifacts are missing, it returns a deterministic stub prediction so Backend API
-integration can continue before the trained model is available.
+The current runtime classifier still defaults to
+`model-artifacts/baseline-food-classifier/` and returns a deterministic stub when
+local model artifacts are missing. After selecting a baseline v2 artifact for
+runtime use, update the classifier artifact wiring separately from training.
+
+## Colab GPU Training
+
+When using Google Colab, copy the project and dataset to `/content` before
+training. Reading thousands of images directly from Google Drive is slower.
+
+```python
+import torch
+
+print(torch.cuda.is_available())
+if torch.cuda.is_available():
+    print(torch.cuda.get_device_name(0))
+```
+
+```bash
+cd /content/nutri-scan/services/ai-inference
+pip install -q timm scikit-learn pydantic-settings python-multipart "uvicorn[standard]" ruff
+pip install -q -e . --no-deps
+
+python scripts/train_classifier.py \
+  --config configs/baseline_training_v2.json \
+  --processed-dir data/processed-v0.2
+```

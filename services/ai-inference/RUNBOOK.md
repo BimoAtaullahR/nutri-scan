@@ -1,6 +1,7 @@
 # NutriScan AI Inference Runbook
 
-This runbook covers the MVP food recognition flow: prepare data, train, evaluate, serve, and smoke-test.
+This runbook covers the MVP food recognition flow: prepare data, apply the
+misclassified review cleanup, train, evaluate, serve, and smoke-test.
 
 ## Setup
 
@@ -22,7 +23,8 @@ python -m pip install -e ".[dev]"
 
 ## Dataset Prep
 
-Keep raw and processed datasets local. Do not commit `data/raw/` or `data/processed/`.
+Keep raw and processed datasets local. Do not commit `data/raw/`,
+`data/processed/`, `data/processed-v0.2/`, generated reports, or model artifacts.
 
 ```bash
 python scripts/prepare_dataset.py \
@@ -37,24 +39,52 @@ Expected processed layout:
 ```txt
 data/processed/
   train/<food_category>/
-  validation/<food_category>/
+  validation/<food_category>/  # `val/` is also accepted.
   test/<food_category>/
 ```
 
-The training script also accepts legacy `val/<food_category>/` as a fallback when
-`validation/<food_category>/` is not present.
+## Dataset v0.2 Review Cleanup
 
-Issue #5 still requires manual curation before metrics should be trusted.
+The current active dataset is `data/processed-v0.2`. It is derived from
+`data/processed` by applying the reviewed baseline v2 misclassification CSV.
+
+```bash
+python scripts/apply_misclassified_review.py \
+  --review-csv reports/baseline-food-classifier-v2/misclassified/misclassified_review.csv \
+  --source-processed-dir data/processed \
+  --output-processed-dir data/processed-v0.2 \
+  --report-path reports/dataset-curation/misclassified_review_apply_report.json \
+  --force
+```
+
+Audit the reviewed dataset:
+
+```bash
+python scripts/curate_dataset.py \
+  --processed-dir data/processed-v0.2 \
+  --class-map configs/mvp_food_categories.json \
+  --report-path reports/dataset-curation/curation_report_v0.2.json
+```
+
+Current v0.2 count: 3,262 images.
+
+Review effect:
+
+- `keep`: 39
+- `reject_ambiguous`: 30
+- `reject_bad_quality`: 23
+- `duplicate`: 1
+- `relabel`: 0
 
 ## Training
 
 ```bash
 python scripts/train_classifier.py \
-  --config configs/baseline_training.json \
-  --processed-dir data/processed
+  --config configs/baseline_training_v2.json \
+  --processed-dir data/processed-v0.2
 ```
 
-Artifacts are written to `model-artifacts/baseline-food-classifier/`:
+Artifacts are written to `model-artifacts/baseline-food-classifier-v2/`:
 
 - `model.pt`
 - `label_map.json`
@@ -62,14 +92,28 @@ Artifacts are written to `model-artifacts/baseline-food-classifier/`:
 
 Do not commit model artifacts.
 
+For EfficientNet-B0 baseline v2, prefer a GPU runtime. CPU-only retraining can
+take long enough that Colab or another NVIDIA GPU machine is the practical path.
+
+Minimal Colab command sequence:
+
+```bash
+cd /content/nutri-scan/services/ai-inference
+pip install -q timm scikit-learn pydantic-settings python-multipart "uvicorn[standard]" ruff
+pip install -q -e . --no-deps
+
+python scripts/train_classifier.py \
+  --config configs/baseline_training_v2.json \
+  --processed-dir data/processed-v0.2
+```
 The script selects CUDA automatically when available and falls back to CPU.
 
 ## Evaluation
 
 ```bash
 python scripts/evaluate_model.py \
-  --predictions-file reports/baseline-food-classifier/predictions.json \
-  --report-dir reports/baseline-food-classifier
+  --predictions-file reports/baseline-food-classifier-v2/predictions.json \
+  --report-dir reports/baseline-food-classifier-v2
 ```
 
 Reports are written to:
@@ -84,7 +128,8 @@ MVP target:
 - top-1 accuracy >= 80%
 - top-3 accuracy >= 90%
 
-Current metrics are not available until the curated dataset and trained baseline artifact exist.
+Current v0.2 metrics are not final until baseline v2 is retrained on
+`data/processed-v0.2` and evaluated against the cleaned held-out test split.
 
 ## Export Misclassified Images
 
@@ -163,6 +208,6 @@ Example response:
 ## Known Limitations
 
 - Estimated energy is a lookup range, not exact calorie detection.
-- Real model inference is blocked until dataset curation, training, and artifact export are complete.
+- Real model inference depends on the selected local model artifact being present.
 - The service returns a deterministic stub prediction when local model artifacts are missing.
 - Nasi padang is deferred from the MVP class set.

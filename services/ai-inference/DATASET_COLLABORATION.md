@@ -23,6 +23,7 @@ Keep these local or shared outside Git:
 
 - `data/raw/`
 - `data/processed/`
+- `data/processed-*/`
 - `reports/`
 - `model-artifacts/`
 
@@ -35,8 +36,10 @@ storage location:
 NutriScan AI Shared/
   datasets/
     nutriscan-mvp-food-dataset-v0.1-2026-05-15.zip
+    nutriscan-mvp-food-dataset-v0.2-2026-05-20.zip
   model-artifacts/
     baseline-efficientnet-b0-v1.zip
+    baseline-efficientnet-b0-v2.zip
   reports/
     baseline-efficientnet-b0-v1/
       metrics.json
@@ -63,49 +66,76 @@ The active dataset version is recorded in:
 services/ai-inference/DATASET_VERSION.md
 ```
 
-Use this version name for the current curated MVP dataset:
+Use this version name for the current reviewed MVP dataset:
 
 ```txt
-nutriscan-mvp-food-dataset-v0.1-2026-05-15.zip
+nutriscan-mvp-food-dataset-v0.2-2026-05-20.zip
 ```
 
-Expected curated counts:
+Expected v0.2 counts:
 
 | Class | Train | Validation | Test | Total |
 | --- | ---: | ---: | ---: | ---: |
-| `nasi_goreng` | 356 | 64 | 87 | 507 |
-| `sate` | 353 | 75 | 81 | 509 |
-| `rendang` | 231 | 45 | 52 | 328 |
-| `bakso` | 309 | 62 | 69 | 440 |
-| `gado_gado` | 251 | 33 | 58 | 342 |
-| `soto` | 331 | 72 | 109 | 512 |
-| `pempek` | 296 | 44 | 84 | 424 |
-| `gudeg` | 237 | 43 | 77 | 357 |
+| `nasi_goreng` | 359 | 77 | 72 | 508 |
+| `sate` | 352 | 75 | 71 | 498 |
+| `rendang` | 229 | 49 | 43 | 321 |
+| `bakso` | 306 | 66 | 60 | 432 |
+| `gado_gado` | 259 | 56 | 50 | 365 |
+| `soto` | 334 | 72 | 58 | 464 |
+| `pempek` | 281 | 60 | 55 | 396 |
+| `gudeg` | 201 | 43 | 34 | 278 |
 
-Total curated images: 3,419.
+Total reviewed images: 3,262.
+
+v0.2 was created from the current `data/processed` folder plus the reviewed
+baseline v2 misclassification CSV:
+
+```txt
+reports/baseline-food-classifier-v2/misclassified/misclassified_review.csv
+```
+
+Review decisions applied:
+
+- 93 reviewed misclassified images
+- 39 kept as valid hard examples
+- 30 rejected as ambiguous
+- 23 rejected as bad quality
+- 1 rejected as duplicate
+- 0 relabeled
 
 ## ZIP Owner Workflow
 
 Run from `services/ai-inference`.
 
-1. Verify the processed dataset exists:
+1. Verify the processed source dataset exists:
 
 ```bash
 find data/processed -maxdepth 2 -type d | sort
 ```
 
-2. Audit the curated dataset:
+2. Apply the misclassified review into a new processed dataset folder:
+
+```bash
+python scripts/apply_misclassified_review.py \
+  --review-csv reports/baseline-food-classifier-v2/misclassified/misclassified_review.csv \
+  --source-processed-dir data/processed \
+  --output-processed-dir data/processed-v0.2 \
+  --report-path reports/dataset-curation/misclassified_review_apply_report.json \
+  --force
+```
+
+3. Audit the reviewed dataset:
 
 ```bash
 python scripts/curate_dataset.py \
-  --processed-dir data/processed \
+  --processed-dir data/processed-v0.2 \
   --class-map configs/mvp_food_categories.json \
-  --report-path reports/dataset-curation/curation_report.json
+  --report-path reports/dataset-curation/curation_report_v0.2.json
 ```
 
-3. Confirm the audit output matches `data/manifests/mvp_food_dataset.md`.
+4. Confirm the audit output matches `data/manifests/mvp_food_dataset.md`.
 
-4. Create a dataset version note beside the ZIP source folder:
+5. Create a dataset version note beside the ZIP source folder:
 
 ```txt
 DATASET_VERSION.md
@@ -114,31 +144,33 @@ DATASET_VERSION.md
 Suggested contents:
 
 ```md
-# NutriScan MVP Food Dataset v0.1
+# NutriScan MVP Food Dataset v0.2
 
-Date: 2026-05-15
-Total images: 3,419
+Date: 2026-05-20
+Total images: 3,262
 Source: Indonesian Food Image - Mendeley Data
 License: CC BY 4.0
 Curator: <name>
 
 Notes:
 - Curated for NutriScan MVP 8-class closed-set classification.
+- Applied baseline v2 misclassified image review decisions.
+- Removed ambiguous, bad-quality, and duplicate reviewed test images.
 - Raw and processed images must not be committed to Git.
 - Counts are recorded in services/ai-inference/data/manifests/mvp_food_dataset.md.
 ```
 
-5. Create the ZIP from inside `services/ai-inference`:
+6. Create the ZIP from inside `services/ai-inference`:
 
 ```bash
-zip -r nutriscan-mvp-food-dataset-v0.1-2026-05-15.zip \
-  data/processed \
+zip -r nutriscan-mvp-food-dataset-v0.2-2026-05-20.zip \
+  data/processed-v0.2 \
   DATASET_VERSION.md
 ```
 
-6. Upload the ZIP to the team storage folder, for example Google Drive or OneDrive.
+7. Upload the ZIP to the team storage folder, for example Google Drive or OneDrive.
 
-7. Share the download link with teammates.
+8. Share the download link with teammates.
 
 ## Teammate Setup Workflow
 
@@ -149,15 +181,15 @@ Run from `services/ai-inference`.
 2. Extract it into `services/ai-inference`:
 
 ```bash
-unzip /path/to/nutriscan-mvp-food-dataset-v0.1-2026-05-15.zip
+unzip /path/to/nutriscan-mvp-food-dataset-v0.2-2026-05-20.zip
 ```
 
 3. Confirm the folder layout:
 
 ```txt
-data/processed/
+data/processed-v0.2/
   train/<food_category>/
-  validation/<food_category>/
+  validation/<food_category>/  # `val/` is also accepted.
   test/<food_category>/
 ```
 
@@ -165,9 +197,9 @@ data/processed/
 
 ```bash
 python scripts/curate_dataset.py \
-  --processed-dir data/processed \
+  --processed-dir data/processed-v0.2 \
   --class-map configs/mvp_food_categories.json \
-  --report-path reports/dataset-curation/curation_report.json
+  --report-path reports/dataset-curation/curation_report_v0.2.json
 ```
 
 5. Confirm the output matches the manifest counts.
@@ -176,9 +208,12 @@ python scripts/curate_dataset.py \
 
 ```bash
 python scripts/train_classifier.py \
-  --config configs/baseline_training.json \
-  --processed-dir data/processed
+  --config configs/baseline_training_v2.json \
+  --processed-dir data/processed-v0.2
 ```
+
+Prefer a GPU runtime such as Google Colab for baseline v2 retraining. CPU-only
+EfficientNet-B0 training is slow.
 
 ## Sharing Model Artifacts
 
@@ -234,7 +269,7 @@ changes, but the official version is the ZIP published by the Dataset Owner.
 Version examples:
 
 - `v0.1`: first curated dataset
-- `v0.2`: duplicate cleanup
+- `v0.2`: misclassified review cleanup for EfficientNet-B0 baseline v2
 - `v0.3`: weak class improvement
 
 Each version update must include:
@@ -260,7 +295,7 @@ Suggested owner flow:
 Before sharing a ZIP, check:
 
 - all 8 MVP classes exist
-- `train`, `validation`, and `test` folders exist for every class
+- `train`, validation (`validation` or `val`), and `test` folders exist for every class
 - every class has at least 100 reviewed images when available
 - no obvious wrong-label images remain
 - no menus, posters, drawings, heavy watermarks, or duplicates remain
@@ -278,6 +313,7 @@ Make sure Git does not show:
 
 - `data/raw/`
 - `data/processed/`
+- `data/processed-*/`
 - `reports/`
 - `model-artifacts/`
 - `*.zip`
