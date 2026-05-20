@@ -82,6 +82,10 @@ ConvNeXt-Tiny is the strongest candidate from this architecture screen. It has
 the best top-1 accuracy, keeps top-3 accuracy above the MVP target, and improves
 all weak-class F1 values compared with the other comparison candidates.
 
+Status: ConvNeXt-Tiny is the selected MVP classifier candidate. It is not yet the
+final runtime model until tuning, artifact wiring, and runtime validation are
+complete.
+
 Artifact sizes:
 
 | Model | Artifact Size |
@@ -116,12 +120,37 @@ Run a small tuning screen before changing the selected MVP classifier. Keep the
 dataset, split, seed, optimizer, scheduler, epoch budget, weight decay, and label
 smoothing fixed unless a later result gives a specific reason to change them.
 
+Important: earlier architecture-screen runs were produced before
+`label_smoothing` was wired into the training loss. Treat those results as
+pre-fix references. Before comparing ConvNeXt-Tiny tuning runs, run the
+ConvNeXt-Tiny control with the patched trainer and a separate output folder so
+all tuning results share the same active `label_smoothing` behavior without
+overwriting the pre-fix reference.
+
+Do not add `label_smoothing=0.0` to the first tuning batch. The intended recipe
+uses active `label_smoothing=0.1`; keep that fixed for the first batch and only
+make label smoothing a tuning axis if the first batch gives a specific reason.
+
 | Run | Config | Change | Decision |
 | --- | --- | --- | --- |
-| Control | `configs/model_comparison_convnext_tiny.json` | Architecture screen result | current best |
+| Control rerun | `configs/convnext_tiny_control_label_smoothing.json` | ConvNeXt-Tiny with active `label_smoothing` | pending |
 | Tune 1 | `configs/convnext_tiny_tune_lr5e5.json` | learning rate `0.0001` -> `0.00005` | pending |
 | Tune 2 | `configs/convnext_tiny_tune_img256.json` | image size `224` -> `256` | pending |
 | Tune 3 | `configs/convnext_tiny_tune_lr5e5_img256.json` | learning rate `0.00005`, image size `256` | pending |
+
+Select the tuned ConvNeXt-Tiny candidate using this order:
+
+1. Highest top-1 accuracy.
+2. If top-1 differs by less than `0.5 pp`, choose the highest weak-class average
+   F1.
+3. If still close, choose the lower combined confusion count for `soto` as
+   `bakso`, `rendang` as `nasi_goreng`, and `gado_gado` as `soto`.
+4. If still tied, choose the cheaper config: `224` image size before `256`, and
+   `learning_rate=0.0001` before `0.00005`.
+
+Do not add more tuning axes until this batch finishes. Defer weight decay,
+label-smoothing sweeps, augmentation changes, longer training, class weighting,
+and test-time augmentation until the four-run ConvNeXt-Tiny batch has results.
 
 ## Decision Rule
 

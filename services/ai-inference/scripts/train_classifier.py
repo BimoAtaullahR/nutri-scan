@@ -32,6 +32,7 @@ class TrainingConfig:
     seed: int
     use_amp: bool
     num_workers: int
+    label_smoothing: float
     output_dir: Path
     report_dir: Path
 
@@ -90,6 +91,7 @@ def load_config(path: Path) -> TrainingConfig:
             seed=int(raw.get("seed", 42)),
             use_amp=bool(raw.get("useAmp", True)),
             num_workers=int(raw.get("numWorkers", 0)),
+            label_smoothing=float(raw.get("labelSmoothing", raw.get("label_smoothing", 0.0))),
             output_dir=output_dir,
             report_dir=Path(raw.get("reportDir", "reports/baseline-food-classifier")),
         )
@@ -118,6 +120,7 @@ def load_config(path: Path) -> TrainingConfig:
         seed=int(raw.get("seed", 42)),
         use_amp=bool(raw.get("use_amp", True)),
         num_workers=int(raw.get("num_workers", 0)),
+        label_smoothing=float(raw.get("label_smoothing", 0.0)),
         output_dir=Path(raw["output_dir"]),
         report_dir=Path(raw["report_dir"]),
     )
@@ -307,6 +310,12 @@ def create_scheduler(config: TrainingConfig, optimizer):
     raise ValueError(f"Unsupported scheduler: {config.scheduler}")
 
 
+def create_criterion(config: TrainingConfig):
+    from torch import nn
+
+    return nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
+
+
 def autocast_context(use_amp: bool):
     if not use_amp:
         return contextlib.nullcontext()
@@ -477,8 +486,6 @@ def train_classifier(config: TrainingConfig, processed_dir: Path) -> None:
     split_dirs = validate_processed_dataset(processed_dir, config.class_names)
 
     import torch
-    from torch import nn
-
     set_seed(config.seed)
     device = detect_device()
     use_amp = config.use_amp and device == "cuda"
@@ -489,7 +496,7 @@ def train_classifier(config: TrainingConfig, processed_dir: Path) -> None:
     model = create_model(config).to(device)
     optimizer = create_optimizer(config, model)
     scheduler = create_scheduler(config, optimizer)
-    criterion = nn.CrossEntropyLoss()
+    criterion = create_criterion(config)
     scaler = create_grad_scaler(use_amp)
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
@@ -574,7 +581,8 @@ def main() -> None:
         print(
             f"model={config.model_name} classes={len(config.class_names)} "
             f"imageSize={config.image_size} batchSize={config.batch_size} "
-            f"epochs={config.epochs} artifactDir={config.output_dir.as_posix()} "
+            f"epochs={config.epochs} labelSmoothing={config.label_smoothing:g} "
+            f"artifactDir={config.output_dir.as_posix()} "
             f"reportDir={config.report_dir.as_posix()}"
         )
         return
