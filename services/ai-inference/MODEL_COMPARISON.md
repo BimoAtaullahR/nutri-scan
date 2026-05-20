@@ -152,9 +152,82 @@ recipe fixed while changing train-time augmentation.
 | Run | Config | Change | Status |
 | --- | --- | --- | --- |
 | Selected baseline | `configs/selected_mvp_classifier.json` | Current fixed selected model | reference |
-| Mild context augmentation | `configs/selected_mvp_aug_context_mild.json` | Crop scale `0.65-1.0`, rotation `12`, color jitter `0.2/0.2/0.15` | ready |
-| Strong context augmentation | `configs/selected_mvp_aug_context_strong.json` | Crop scale `0.55-1.0`, rotation `15`, color jitter `0.25/0.25/0.2` | ready |
-| Mild context + random erasing | `configs/selected_mvp_aug_random_erasing.json` | Mild context settings plus `random_erasing_p=0.1` | ready |
+| Mild context augmentation | `configs/selected_mvp_aug_context_mild.json` | Crop scale `0.65-1.0`, rotation `12`, color jitter `0.2/0.2/0.15` | reject |
+| Strong context augmentation | `configs/selected_mvp_aug_context_strong.json` | Crop scale `0.55-1.0`, rotation `15`, color jitter `0.25/0.25/0.2` | select |
+| Mild context + random erasing | `configs/selected_mvp_aug_random_erasing.json` | Mild context settings plus `random_erasing_p=0.1` | reject |
+
+Batch result:
+
+| Run | Top-1 | Top-3 | Rendang F1 | Gado-gado F1 | Soto F1 | Weak avg F1 | Priority confusions | Misclassified | Decision |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Selected baseline | 91.87% | 98.87% | 83.95% | 87.93% | 89.37% | 87.08% | 5 | 36 | previous selected recipe |
+| Mild context augmentation | 91.87% | 98.19% | 86.08% | 87.62% | 89.66% | 87.78% | 3 | 36 | reject: no top-1 or error-count gain |
+| Strong context augmentation | 93.91% | 99.10% | 90.48% | 90.38% | 89.83% | 90.23% | 4 | 27 | select: best global and weak-class result |
+| Mild context + random erasing | 91.87% | 98.87% | 88.10% | 89.32% | 88.70% | 88.70% | 3 | 36 | reject: weak-class gain without error-count gain |
+
+The selected training recipe remains `convnext_tiny.fb_in1k`,
+`image_size=256`, `learning_rate=0.0001`, and active `label_smoothing=0.1`,
+but should adopt the strong context augmentation settings:
+
+- `random_resized_crop_scale=[0.55, 1.0]`
+- `rotation_degrees=15`
+- `color_jitter_brightness=0.25`
+- `color_jitter_contrast=0.25`
+- `color_jitter_saturation=0.2`
+- `random_erasing_p=0.0`
+
+This is not evidence for a broader augmentation sweep yet. Strong context
+augmentation improved top-1 by `+2.03pp`, top-3 by `+0.23pp`, weak-class
+average F1 by `+3.15pp`, and reduced total misclassified images from `36` to
+`27`. The next work should promote this recipe, validate serving/runtime
+compatibility, then run focused error analysis on the new `27` failures.
+
+## Final Selected Model Error Analysis
+
+Reviewed file:
+
+```txt
+reports/selected-mvp-classifier/error_analysis.xlsx
+```
+
+Parsed summary:
+
+| Category | Count |
+| --- | ---: |
+| Total reviewed misclassified images | 27 |
+| `model_error` | 25 |
+| `out_of_scope` | 1 |
+| `ambiguous` | 1 |
+| `keep_for_tuning_signal` | 25 |
+| `exclude_in_next_dataset` | 2 |
+
+Error type breakdown:
+
+| Error Type | Count |
+| --- | ---: |
+| `background_or_context_bias` | 13 |
+| `weak_class_overlap` | 7 |
+| `image_quality` | 4 |
+| `low_visual_dominance` | 2 |
+| `mixed_food` | 1 |
+
+Largest repeated confusion:
+
+- `bakso` as `soto`: 3, mixed causes across context, visual dominance, and
+  weak-class overlap
+- `pempek` as `gado_gado`: 3, two valid tuning signals and one out-of-scope
+  exclusion candidate
+- `sate` as `rendang`: 3, all `weak_class_overlap`
+- `gado_gado` as `soto`: 2, both `background_or_context_bias`
+- `soto` as `gudeg`: 2, both `background_or_context_bias`
+
+Conclusion: the final selected model's remaining failures are mostly valid
+model errors. Only two images should be excluded in a future dataset version, so
+do not run a broad dataset cleanup before MVP integration. The next engineering
+step is to wire and validate this artifact in the inference service. Further
+model improvement, if needed after serving validation, should target
+`background_or_context_bias` and `weak_class_overlap` with more representative
+examples or a small, validation-driven tuning batch.
 
 Selection rule for this batch:
 

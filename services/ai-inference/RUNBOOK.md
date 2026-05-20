@@ -92,8 +92,9 @@ Artifacts are written to `model-artifacts/baseline-food-classifier-v2/`:
 
 Do not commit model artifacts.
 
-For EfficientNet-B0 baseline v2, prefer a GPU runtime. CPU-only retraining can
-take long enough that Colab or another NVIDIA GPU machine is the practical path.
+For the selected ConvNeXt-Tiny MVP classifier, prefer a GPU runtime. CPU-only
+retraining can take long enough that Colab or another NVIDIA GPU machine is the
+practical path.
 
 Minimal Colab command sequence:
 
@@ -102,9 +103,27 @@ cd /content/nutri-scan/services/ai-inference
 REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 ```
 
+Before training in Colab, verify that the cloned branch contains the selected
+augmentation recipe in `configs/selected_mvp_classifier.json`:
+
+```txt
+random_resized_crop_scale = [0.55, 1.0]
+rotation_degrees = 15
+color_jitter = 0.25 / 0.25 / 0.2
+random_erasing_p = 0.0
+```
+
 The helper installs training dependencies, fails fast when CUDA is unavailable,
-trains with `configs/baseline_training_v2.json`, evaluates predictions, exports
-misclassified images, and prints top-1, top-3, and weak-class metrics.
+trains with `configs/selected_mvp_classifier.json` by default, evaluates
+predictions, exports misclassified images, and prints top-1, top-3, and
+weak-class metrics. Set `CONFIG=...` only when intentionally rerunning an older
+baseline or comparison config.
+
+For config-only validation without starting training:
+
+```bash
+REQUIRE_CUDA=0 INSTALL_DEPS=0 DRY_RUN_ONLY=1 bash scripts/colab_retrain_baseline_v2.sh
+```
 
 ## Model Comparison Workflow
 
@@ -143,7 +162,8 @@ configs/selected_mvp_classifier.json
 ```
 
 This selected config uses `convnext_tiny.fb_in1k`, `image_size=256`,
-`learning_rate=0.0001`, and active `label_smoothing=0.1`.
+`learning_rate=0.0001`, active `label_smoothing=0.1`, and the selected strong
+context augmentation settings.
 Before running more tuning, follow the further tuning guardrails in
 `MODEL_COMPARISON.md`: review selected-model errors, define the next objective,
 and avoid repeatedly selecting models from the same held-out test set.
@@ -253,6 +273,18 @@ python scripts/predict_image.py --model-path model-artifacts/baseline-food-class
 
 ## Serving
 
+Default runtime configuration uses the selected MVP Model Artifact:
+
+```txt
+NUTRISCAN_MODEL_ARTIFACT_DIR=model-artifacts/selected-mvp-classifier
+NUTRISCAN_MODEL_VERSION=selected-mvp-classifier
+NUTRISCAN_CONFIDENCE_THRESHOLD=0.6
+```
+
+Override these environment variables only when intentionally serving another
+artifact package. The artifact directory must contain `model.pt`,
+`label_map.json`, and `training_config_resolved.json`.
+
 ```bash
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -261,6 +293,12 @@ Health check:
 
 ```bash
 curl http://localhost:8000/healthz
+```
+
+Readiness and active model metadata:
+
+```bash
+curl http://localhost:8000/readyz
 ```
 
 ## Smoke Test
@@ -274,19 +312,19 @@ Example response:
 
 ```json
 {
-  "modelVersion": "baseline-0.1.0",
+  "modelVersion": "selected-mvp-classifier",
   "foodCategory": {
     "slug": "sate",
-    "confidenceScore": 0.61
+    "confidenceScore": 0.91
   },
   "alternatives": [
     {
       "slug": "rendang",
-      "confidenceScore": 0.24
+      "confidenceScore": 0.05
     },
     {
       "slug": "bakso",
-      "confidenceScore": 0.15
+      "confidenceScore": 0.02
     }
   ],
   "coarsePortion": "medium",
@@ -299,9 +337,34 @@ Example response:
 }
 ```
 
+## Backend API Smoke Validation
+
+Use this when you need to prove the selected Model Artifact works end-to-end
+through the Backend API **Core Scan Loop**. The test is gated to skip when
+the selected Model Artifact is unavailable or the AI/ML service is not ready.
+
+1. Ensure the selected Model Artifact is present and the AI/ML Inference
+   service is running:
+
+   ```bash
+   export NUTRISCAN_MODEL_ARTIFACT_DIR=/path/to/selected-mvp-classifier
+   export NUTRISCAN_MODEL_VERSION=selected-mvp-classifier
+   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+   curl http://localhost:8000/readyz
+   ```
+
+2. Run the Backend API smoke test with a real database:
+
+   ```bash
+   export TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/nutriscan?sslmode=disable
+   export TEST_AI_INFERENCE_URL=http://localhost:8000
+   go test ./services/backend/cmd/api -run TestCoreScanLoopSmoke -v
+   ```
+
 ## Known Limitations
 
 - Estimated energy is a lookup range, not exact calorie detection.
 - Real model inference depends on the selected local model artifact being present.
-- The service returns a deterministic stub prediction when local model artifacts are missing.
+- Missing or invalid selected Model Artifacts fail readiness and inference instead
+  of returning stub predictions.
 - Nasi padang is deferred from the MVP class set.

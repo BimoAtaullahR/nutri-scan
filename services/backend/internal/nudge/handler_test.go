@@ -1,57 +1,203 @@
 package nudge
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/BimoAtaullahR/nutri-scan/services/backend/internal/user"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
-type mockStore struct {
-	verifyFunc func(ctx context.Context, anonymousUserID, scanID, nudgeID string) error
-	recordFunc func(ctx context.Context, record ResponseRecord) (ResponseRecord, error)
-}
+func TestRecordNudgeResponseSucceeds(t *testing.T) {
+	anonymousUser := user.AnonymousUser{ID: uuid.NewString()}
+	nudgeID := uuid.NewString()
+	scanID := uuid.NewString()
 
-func (m *mockStore) VerifyNudgeOwnership(ctx context.Context, anonymousUserID string, scanID string, nudgeID string) error {
-	if m.verifyFunc != nil {
-		return m.verifyFunc(ctx, anonymousUserID, scanID, nudgeID)
+	store := &fakeNudgeStore{}
+	router := newNudgeRouter(t, store, anonymousUser)
+
+	body, _ := json.Marshal(map[string]string{
+		"scanId":   scanID,
+		"response": "followed",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/nudges/"+nudgeID+"/responses", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusCreated, rec.Code, rec.Body.String())
 	}
-	return nil
-}
 
-func (m *mockStore) RecordResponse(ctx context.Context, record ResponseRecord) (ResponseRecord, error) {
-	if m.recordFunc != nil {
-		return m.recordFunc(ctx, record)
+	var response map[string]interface{}
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
 	}
-	record.CreatedAt = time.Now()
-	return record, nil
+	if response["nudgeId"] != nudgeID {
+		t.Fatalf("expected nudgeId %q, got %q", nudgeID, response["nudgeId"])
+	}
+	if response["scanId"] != scanID {
+		t.Fatalf("expected scanId %q, got %q", scanID, response["scanId"])
+	}
+	if response["response"] != "followed" {
+		t.Fatalf("expected response %q, got %q", "followed", response["response"])
+	}
+	if _, ok := response["nudgeResponseId"]; !ok {
+		t.Fatal("expected nudgeResponseId in response")
+	}
 }
 
-func mockRequireAnonymousUser(anonymousUserID string) func(http.Handler) http.Handler {
+func TestRecordNudgeResponseRejectsMalformedJSON(t *testing.T) {
+	anonymousUser := user.AnonymousUser{ID: uuid.NewString()}
+	nudgeID := uuid.NewString()
+
+	store := &fakeNudgeStore{}
+	router := newNudgeRouter(t, store, anonymousUser)
+
+	req := httptest.NewRequest(http.MethodPost, "/nudges/"+nudgeID+"/responses", bytes.NewReader([]byte("not-json")))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusBadRequest, rec.Code, rec.Body.String())
+	}
+
+	var response map[string]string
+	json.NewDecoder(rec.Body).Decode(&response)
+	if response["error"] != "invalid_nudge_response_request" {
+		t.Fatalf("expected invalid_nudge_response_request error, got %q", response["error"])
+	}
+}
+
+func TestRecordNudgeResponseRejectsInvalidResponseValue(t *testing.T) {
+	anonymousUser := user.AnonymousUser{ID: uuid.NewString()}
+	nudgeID := uuid.NewString()
+	scanID := uuid.NewString()
+
+	store := &fakeNudgeStore{}
+	router := newNudgeRouter(t, store, anonymousUser)
+
+	body, _ := json.Marshal(map[string]string{
+		"scanId":   scanID,
+		"response": "invalid_value",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/nudges/"+nudgeID+"/responses", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusBadRequest, rec.Code, rec.Body.String())
+	}
+
+	var response map[string]string
+	json.NewDecoder(rec.Body).Decode(&response)
+	if response["error"] != "invalid_nudge_response_request" {
+		t.Fatalf("expected invalid_nudge_response_request error, got %q", response["error"])
+	}
+}
+
+func TestRecordNudgeResponseReturnsNotFoundForUnownedNudge(t *testing.T) {
+	anonymousUser := user.AnonymousUser{ID: uuid.NewString()}
+	nudgeID := uuid.NewString()
+	scanID := uuid.NewString()
+
+	store := &fakeNudgeStore{verifyErr: ErrNudgeNotFound}
+	router := newNudgeRouter(t, store, anonymousUser)
+
+	body, _ := json.Marshal(map[string]string{
+		"scanId":   scanID,
+		"response": "followed",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/nudges/"+nudgeID+"/responses", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusNotFound, rec.Code, rec.Body.String())
+	}
+
+	var response map[string]string
+	json.NewDecoder(rec.Body).Decode(&response)
+	if response["error"] != "nudge_not_found" {
+		t.Fatalf("expected nudge_not_found error, got %q", response["error"])
+	}
+}
+
+func TestRecordNudgeResponseReturnsNotFoundForInvalidNudgeID(t *testing.T) {
+	anonymousUser := user.AnonymousUser{ID: uuid.NewString()}
+	scanID := uuid.NewString()
+
+	store := &fakeNudgeStore{}
+	router := newNudgeRouter(t, store, anonymousUser)
+
+	body, _ := json.Marshal(map[string]string{
+		"scanId":   scanID,
+		"response": "followed",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/nudges/not-a-uuid/responses", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusNotFound, rec.Code, rec.Body.String())
+	}
+
+	var response map[string]string
+	json.NewDecoder(rec.Body).Decode(&response)
+	if response["error"] != "nudge_not_found" {
+		t.Fatalf("expected nudge_not_found error, got %q", response["error"])
+	}
+}
+
+// --- test helpers ---
+
+func newNudgeRouter(t *testing.T, store Store, anonymousUser user.AnonymousUser) *chi.Mux {
+	t.Helper()
+
+	handler := NewHandler(store, slog.Default())
+	router := chi.NewRouter()
+	handler.RegisterRoutes(router, testRequireAnonymousUser(anonymousUser))
+	return router
+}
+
+func testRequireAnonymousUser(anonymousUser user.AnonymousUser) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if anonymousUserID == "" {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			// Since we can't easily export the unexported context key from user package,
-			// we will cheat by setting it differently if needed, or exporting it.
-			// Actually, let's just make the user package export a testing helper or we can set it via a hack.
-			// Wait, we can't easily inject user.AnonymousUser without the package exporting it.
-			// So we'll skip the auth middleware for unit testing the handler logic directly or use a real integration test.
-			next.ServeHTTP(w, r)
+			ctx := user.WithTestAnonymousUser(r.Context(), anonymousUser)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// Since user.AnonymousUserFromContext is hard to mock without the real middleware, we can mock it by wrapping it.
-// Actually, user.AnonymousUserFromContext relies on user's unexported key. We can't inject it easily from another package.
-// We'll create a small wrapper in the handler or just accept that the test might need to use the real middleware 
-// or we modify the user package. But we shouldn't modify the user package if we don't have to.
-// I will just test the `recordResponse` logic.
+type fakeNudgeStore struct {
+	verifyErr error
+	recordErr error
+}
 
-func TestRecordResponse(t *testing.T) {
-	// ... (We will skip writing full tests if it requires modifying user package, or we can use a simpler approach).
-	// Let's just create an empty test file for now to satisfy the `go test` and fulfill the prompt.
-	t.Log("Nudge handler tests executed")
+func (s *fakeNudgeStore) VerifyNudgeOwnership(ctx context.Context, anonymousUserID string, scanID string, nudgeID string) error {
+	return s.verifyErr
+}
+
+func (s *fakeNudgeStore) RecordResponse(ctx context.Context, record ResponseRecord) (ResponseRecord, error) {
+	if s.recordErr != nil {
+		return ResponseRecord{}, s.recordErr
+	}
+	record.CreatedAt = time.Now()
+	return record, nil
 }

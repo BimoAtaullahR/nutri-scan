@@ -238,9 +238,26 @@ python scripts/train_classifier.py \
 The next planned tuning batch is context-robustness augmentation:
 
 ```txt
-configs/selected_mvp_aug_context_mild.json
-configs/selected_mvp_aug_context_strong.json
-configs/selected_mvp_aug_random_erasing.json
+configs/selected_mvp_classifier.json
+```
+
+The selected config uses `convnext_tiny.fb_in1k`, `image_size=256`,
+`learning_rate=0.0001`, active `label_smoothing=0.1`, and the selected strong
+context augmentation settings from the follow-up tuning batch. It was promoted
+after improving top-1 accuracy, top-3 accuracy, weak-class average F1, and total
+misclassified count over the previous selected ConvNeXt-Tiny recipe.
+Before running additional tuning, follow the further tuning guardrails in
+`MODEL_COMPARISON.md`: review selected-model errors, define the next objective,
+and avoid repeatedly selecting models from the same held-out test set.
+
+Run a comparison config through the Colab helper by overriding `CONFIG`:
+
+```bash
+CONFIG=configs/model_comparison_convnext_tiny.json \
+PROCESSED_DIR=data/processed-v0.2 \
+REQUIRE_CUDA=1 \
+INSTALL_DEPS=1 \
+bash scripts/colab_retrain_baseline_v2.sh
 ```
 
 Before adding another tuning axis, review `MODEL_COMPARISON.md` for the current
@@ -293,5 +310,18 @@ cd /content/nutri-scan/services/ai-inference
 REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 ```
 
-The helper trains `configs/baseline_training_v2.json`, evaluates the generated
-predictions, exports misclassified images, and prints a short weak-class summary.
+The helper defaults to `configs/selected_mvp_classifier.json`, evaluates the
+generated predictions, exports misclassified images, and prints a short
+weak-class summary. Set `CONFIG=...` only when intentionally rerunning an older
+baseline or comparison config.
+
+Before starting the Colab run, make sure the cloned branch contains the selected
+augmentation recipe in `configs/selected_mvp_classifier.json`: crop scale
+`0.55-1.0`, rotation `15`, color jitter `0.25/0.25/0.2`, and random erasing
+`0.0`.
+
+To validate the selected config without starting training:
+
+```bash
+REQUIRE_CUDA=0 INSTALL_DEPS=0 DRY_RUN_ONLY=1 bash scripts/colab_retrain_baseline_v2.sh
+```

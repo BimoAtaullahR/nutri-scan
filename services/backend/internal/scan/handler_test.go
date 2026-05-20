@@ -79,7 +79,13 @@ func TestCreateScanProducesReviewFoodNudgeForLowConfidenceInference(t *testing.T
 	store := newFakeStore()
 	result := validInferenceResult()
 	result.IsLowConfidence = true
+	result.FoodCategory.Slug = "unknown_food"
 	result.FoodCategory.ConfidenceScore = 0.42
+	result.Alternatives = []FoodCategoryConfidence{
+		{Slug: "sate", ConfidenceScore: 0.42},
+		{Slug: "rendang", ConfidenceScore: 0.31},
+	}
+	result.EstimatedEnergyRange = nil
 	aiClient := &fakeInferenceClient{result: result}
 	router := newAuthenticatedScanRouter(t, store, aiClient, anonymousUser)
 
@@ -99,6 +105,18 @@ func TestCreateScanProducesReviewFoodNudgeForLowConfidenceInference(t *testing.T
 	}
 	if response.Status != ScanStatusCompleted {
 		t.Fatalf("expected low-confidence Scan to complete, got %q", response.Status)
+	}
+	if response.FailureReason != nil {
+		t.Fatalf("expected low-confidence Scan not to fail, got %q", *response.FailureReason)
+	}
+	if response.EstimatedEnergyKcal != nil {
+		t.Fatalf("expected low-confidence Scan not to estimate energy, got %d", *response.EstimatedEnergyKcal)
+	}
+	if response.Inference == nil || response.Inference.FoodCategory != "unknown_food" {
+		t.Fatalf("expected Unknown Food inference summary, got %#v", response.Inference)
+	}
+	if len(response.Inference.Alternatives) != 2 {
+		t.Fatalf("expected review alternatives, got %#v", response.Inference.Alternatives)
 	}
 	if response.NudgeDecision == nil {
 		t.Fatal("expected Review Food Nudge")
@@ -252,6 +270,44 @@ func TestCreateScanMarksInvalidInferencePayloadFailed(t *testing.T) {
 			FoodCategory: FoodCategoryConfidence{
 				Slug:            "nasi_goreng",
 				ConfidenceScore: 1.2,
+			},
+			CoarsePortion:       "medium",
+			ConfidenceThreshold: 0.6,
+		},
+	}
+	router := newAuthenticatedScanRouter(t, store, aiClient, anonymousUser)
+
+	req := newMultipartScanRequest(t, "/scans", "snack", []byte("not-empty"), "image/png")
+	req.Header.Set("Authorization", "Bearer token")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected status %d, got %d with body %s", http.StatusCreated, rec.Code, rec.Body.String())
+	}
+
+	var response scanResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.Status != ScanStatusFailed {
+		t.Fatalf("expected failed status, got %q", response.Status)
+	}
+	if response.FailureReason == nil || *response.FailureReason != "invalid_inference_payload" {
+		t.Fatalf("expected invalid_inference_payload reason, got %#v", response.FailureReason)
+	}
+}
+
+func TestCreateScanMarksInvalidInferencePayloadMissingModelVersion(t *testing.T) {
+	anonymousUser := user.AnonymousUser{ID: "9fd2e4f6-a1ab-432a-86bc-30a743a6f74b"}
+	store := newFakeStore()
+	aiClient := &fakeInferenceClient{
+		result: InferenceResult{
+			ModelVersion: "",
+			FoodCategory: FoodCategoryConfidence{
+				Slug:            "nasi_goreng",
+				ConfidenceScore: 0.87,
 			},
 			CoarsePortion:       "medium",
 			ConfidenceThreshold: 0.6,
