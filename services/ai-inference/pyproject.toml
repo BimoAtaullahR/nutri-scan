@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "nutriscan-ai-inference"
 version = "0.1.0"
@@ -33,3 +37,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["data*", "configs*", "notebooks*", "reports*", "model-artifacts*"]

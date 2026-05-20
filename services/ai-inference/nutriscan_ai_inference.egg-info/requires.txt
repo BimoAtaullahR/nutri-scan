@@ -1,0 +1,15 @@
+fastapi
+python-multipart
+uvicorn[standard]
+pydantic-settings
+torch
+torchvision
+timm
+pillow
+numpy
+scikit-learn
+pyyaml
+
+[dev]
+pytest
+ruff
