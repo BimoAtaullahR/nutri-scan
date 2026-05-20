@@ -92,8 +92,9 @@ Artifacts are written to `model-artifacts/baseline-food-classifier-v2/`:
 
 Do not commit model artifacts.
 
-For EfficientNet-B0 baseline v2, prefer a GPU runtime. CPU-only retraining can
-take long enough that Colab or another NVIDIA GPU machine is the practical path.
+For the selected ConvNeXt-Tiny MVP classifier, prefer a GPU runtime. CPU-only
+retraining can take long enough that Colab or another NVIDIA GPU machine is the
+practical path.
 
 Minimal Colab command sequence:
 
@@ -103,8 +104,16 @@ REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 ```
 
 The helper installs training dependencies, fails fast when CUDA is unavailable,
-trains with `configs/baseline_training_v2.json`, evaluates predictions, exports
-misclassified images, and prints top-1, top-3, and weak-class metrics.
+trains with `configs/selected_mvp_classifier.json` by default, evaluates
+predictions, exports misclassified images, and prints top-1, top-3, and
+weak-class metrics. Set `CONFIG=...` only when intentionally rerunning an older
+baseline or comparison config.
+
+For config-only validation without starting training:
+
+```bash
+REQUIRE_CUDA=0 INSTALL_DEPS=0 DRY_RUN_ONLY=1 bash scripts/colab_retrain_baseline_v2.sh
+```
 
 ## Model Comparison Workflow
 
@@ -143,7 +152,8 @@ configs/selected_mvp_classifier.json
 ```
 
 This selected config uses `convnext_tiny.fb_in1k`, `image_size=256`,
-`learning_rate=0.0001`, and active `label_smoothing=0.1`.
+`learning_rate=0.0001`, active `label_smoothing=0.1`, and the selected strong
+context augmentation settings.
 Before running more tuning, follow the further tuning guardrails in
 `MODEL_COMPARISON.md`: review selected-model errors, define the next objective,
 and avoid repeatedly selecting models from the same held-out test set.

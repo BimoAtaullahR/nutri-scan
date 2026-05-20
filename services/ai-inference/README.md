@@ -248,9 +248,10 @@ configs/selected_mvp_classifier.json
 ```
 
 The selected config uses `convnext_tiny.fb_in1k`, `image_size=256`,
-`learning_rate=0.0001`, and active `label_smoothing=0.1`. It was selected from
-the ConvNeXt-Tiny tuning screen because it had the highest top-1 accuracy,
-highest top-3 accuracy, and lowest total misclassified count in the tuning batch.
+`learning_rate=0.0001`, active `label_smoothing=0.1`, and the selected strong
+context augmentation settings from the follow-up tuning batch. It was promoted
+after improving top-1 accuracy, top-3 accuracy, weak-class average F1, and total
+misclassified count over the previous selected ConvNeXt-Tiny recipe.
 Before running additional tuning, follow the further tuning guardrails in
 `MODEL_COMPARISON.md`: review selected-model errors, define the next objective,
 and avoid repeatedly selecting models from the same held-out test set.
@@ -314,5 +315,13 @@ cd /content/nutri-scan/services/ai-inference
 REQUIRE_CUDA=1 INSTALL_DEPS=1 bash scripts/colab_retrain_baseline_v2.sh
 ```
 
-The helper trains `configs/baseline_training_v2.json`, evaluates the generated
-predictions, exports misclassified images, and prints a short weak-class summary.
+The helper defaults to `configs/selected_mvp_classifier.json`, evaluates the
+generated predictions, exports misclassified images, and prints a short
+weak-class summary. Set `CONFIG=...` only when intentionally rerunning an older
+baseline or comparison config.
+
+To validate the selected config without starting training:
+
+```bash
+REQUIRE_CUDA=0 INSTALL_DEPS=0 DRY_RUN_ONLY=1 bash scripts/colab_retrain_baseline_v2.sh
+```
