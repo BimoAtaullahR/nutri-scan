@@ -211,62 +211,40 @@ python scripts/evaluate_model.py \
 The output states whether the MVP targets are met: top-1 accuracy at least 80% and
 top-3 accuracy at least 90%.
 
-## Model Comparison
+## Model Selection and Tuning
 
-Model comparison is tracked in `MODEL_COMPARISON.md`. Keep two stages separate:
+Current model-development progress is tracked in `MODEL_COMPARISON.md`.
 
-- **Architecture screen**: compare model families against the EfficientNet-B0 v2
-  control baseline. This stage decides which architecture is worth tuning.
-- **Tuning screen**: run a few targeted hyperparameter changes only for the
-  winning architecture.
+The selected MVP classifier is `configs/selected_mvp_classifier.json`:
 
-The ConvNeXt-Tiny tuning configs are not required before comparing the
-architecture-screen ConvNeXt-Tiny result with the original project baseline. Run
-those tuning configs only after selecting ConvNeXt-Tiny as the strongest
-architecture-screen candidate.
+- model: `convnext_tiny.fb_in1k`
+- dataset: `data/processed-v0.2`
+- image size: `256`
+- learning rate: `0.0001`
+- weight decay: `0.0005`
+- label smoothing: `0.1`
 
-Architecture-screen configs:
+MobileNetV3-Large remains the lightweight fallback if serving latency, memory,
+or artifact size becomes more important than recognition quality.
 
-```txt
-configs/model_comparison_mobilenetv3_large.json
-configs/model_comparison_efficientnet_b2.json
-configs/model_comparison_convnext_tiny.json
-```
-
-ConvNeXt-Tiny tuning configs:
-
-```txt
-configs/convnext_tiny_tune_lr5e5.json
-configs/convnext_tiny_tune_img256.json
-configs/convnext_tiny_tune_lr5e5_img256.json
-```
-
-Selected MVP classifier config:
-
-```txt
-configs/selected_mvp_classifier.json
-```
-
-The selected config uses `convnext_tiny.fb_in1k`, `image_size=256`,
-`learning_rate=0.0001`, and active `label_smoothing=0.1`. It was selected from
-the ConvNeXt-Tiny tuning screen because it had the highest top-1 accuracy,
-highest top-3 accuracy, and lowest total misclassified count in the tuning batch.
-Before running additional tuning, follow the further tuning guardrails in
-`MODEL_COMPARISON.md`: review selected-model errors, define the next objective,
-and avoid repeatedly selecting models from the same held-out test set.
-
-Run a comparison config through the Colab helper by overriding `CONFIG`:
+Run the selected model or a tuning candidate with:
 
 ```bash
-CONFIG=configs/model_comparison_convnext_tiny.json \
-PROCESSED_DIR=data/processed-v0.2 \
-REQUIRE_CUDA=1 \
-INSTALL_DEPS=1 \
-bash scripts/colab_retrain_baseline_v2.sh
+python scripts/train_classifier.py \
+  --config configs/selected_mvp_classifier.json \
+  --processed-dir data/processed-v0.2
 ```
 
-Commit only small configs and summary documentation. Do not commit generated
-`reports/`, `model-artifacts/`, dataset images, or ZIP files.
+The next planned tuning batch is context-robustness augmentation:
+
+```txt
+configs/selected_mvp_aug_context_mild.json
+configs/selected_mvp_aug_context_strong.json
+configs/selected_mvp_aug_random_erasing.json
+```
+
+Before adding another tuning axis, review `MODEL_COMPARISON.md` for the current
+selection rule and guardrails.
 
 ## Estimated Energy Ranges
 
@@ -293,8 +271,9 @@ curl -X POST http://localhost:8000/infer \
 
 The current runtime classifier still defaults to
 `model-artifacts/baseline-food-classifier/` and returns a deterministic stub when
-local model artifacts are missing. After selecting a baseline v2 artifact for
-runtime use, update the classifier artifact wiring separately from training.
+local model artifacts are missing. The selected training config writes to
+`model-artifacts/selected-mvp-classifier/`; runtime artifact wiring should be
+updated separately before product/demo inference uses the selected model.
 
 ## Colab GPU Training
 
